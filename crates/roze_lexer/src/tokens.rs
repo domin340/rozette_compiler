@@ -7,17 +7,23 @@ pub enum CommentKind {
     /// LineComment
     Line,
     /// InlineComment
-    Inline,
+    Inline { terminated: bool },
 }
 
 #[derive(displaydoc::Display, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
     /// `{0}`
     Comment(CommentKind),
+    /// <eof>
+    Eof,
+    /// <invalid>
+    Invalid,
     /// `;`
     Semi,
     /// `\n`
     NewLine,
+    /// <ident>
+    Ident,
     /// `let`
     Let,
     /// `mut`
