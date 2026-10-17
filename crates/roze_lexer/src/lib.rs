@@ -1,6 +1,13 @@
 mod tokens;
 
-use tokens::{CommentKind, Lexer, Token, TokenKind, lex_all};
+use tokens::{CommentKind, Token, TokenKind};
+
+#[derive(Debug)]
+pub struct Lexer {}
+
+pub fn lex_all(s: &str) -> Vec<Token> {
+    todo!()
+}
 
 #[cfg(test)]
 mod tests {
