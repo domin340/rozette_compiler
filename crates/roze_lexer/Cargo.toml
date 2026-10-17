@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 displaydoc = "0.2.7"
+memchr = "2.8.3"
+unicode-ident = "1.0.27"
