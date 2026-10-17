@@ -1,13 +1,14 @@
 mod tokens;
 
 use std::str::Chars;
-
 use tokens::{CommentKind, Token, TokenKind};
 
 #[derive(Debug)]
 pub struct Lexer<'source> {
+    s: &'source str,
     chars: Chars<'source>,
-    len: u32,
+    #[cfg(debug_assertions)]
+    prev: Option<char>,
 }
 
 pub const EOF: char = '\0';
@@ -22,18 +23,25 @@ impl<'source> Lexer<'source> {
         }
 
         Self {
+            s,
             chars: s.chars(),
-            len: s.len() as u32,
+            prev: None,
         }
     }
 
-    fn pos(&self) -> u32 {
-        let remaining_len = self.chars.as_str().len() as u32;
-        self.len - remaining_len
+    fn pos(&self) -> usize {
+        self.s.len() - self.as_str().len()
     }
 
     fn bump(&mut self) -> char {
-        self.chars.next().unwrap_or(EOF)
+        let c = self.chars.next();
+
+        #[cfg(debug_assertions)]
+        {
+            self.prev = c;
+        }
+
+        c.unwrap_or(EOF)
     }
 
     fn first(&mut self) -> char {
@@ -103,7 +111,6 @@ impl<'source> Lexer<'source> {
         };
     }
 
-    #[inline(always)]
     fn eat_while(&mut self, p: impl Fn(char) -> bool) {
         while p(self.first()) {
             self.bump();
@@ -147,16 +154,18 @@ impl<'source> Lexer<'source> {
 
         loop {
             match self.first() {
-                EOF => break,
+                EOF | '\r' | '\n' => break, // unterminated
                 '\\' => {
                     self.bump();
                     self.bump();
                 }
-                c if c == quote => {
+                c => {
                     self.bump();
-                    break;
+
+                    if c == quote {
+                        break; // terminated
+                    }
                 }
-                _ => _ = self.bump(),
             }
         }
 
@@ -225,17 +234,21 @@ impl<'source> Lexer<'source> {
                 self.bump();
                 TokenKind::PipePipe
             }
-            c if is_ident_start(c) => {
-                self.eat_ident_continue();
-                TokenKind::Ident
-            }
             '0'..='9' => self.number(),
             quote @ ('\'' | '"') => self.string(quote),
+            c if is_ident_start(c) => {
+                self.eat_ident_continue();
+                let s = &self.s[start..self.pos()];
+                classify_ident(s)
+            }
             _ => TokenKind::Invalid,
         };
 
-        let end = self.pos();
-        Token { kind, start, end }
+        Token {
+            kind,
+            start: start as u32,
+            end: self.pos() as u32,
+        }
     }
 }
 
@@ -245,6 +258,33 @@ fn is_ident_start(c: char) -> bool {
 
 fn is_ident_continue(c: char) -> bool {
     unicode_ident::is_xid_continue(c) || c == '_'
+}
+
+fn classify_ident(s: &str) -> TokenKind {
+    match s.len() {
+        2 => match s {
+            "as" => TokenKind::As,
+            _ => TokenKind::Ident,
+        },
+        3 => match s {
+            "let" => TokenKind::Let,
+            "mut" => TokenKind::Mut,
+            _ => TokenKind::Ident,
+        },
+        _ => TokenKind::Ident,
+    }
+}
+
+pub fn iter(s: &str) -> impl Iterator<Item = Token> {
+    let mut lexer = Lexer::new(s);
+    std::iter::from_fn(move || {
+        let token = lexer.next_token();
+        if token.kind == TokenKind::Eof {
+            None
+        } else {
+            Some(token)
+        }
+    })
 }
 
 pub fn lex(s: &str) -> Vec<Token> {
@@ -269,5 +309,39 @@ pub fn lex(s: &str) -> Vec<Token> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{CommentKind, Lexer, Token, TokenKind};
+
+    fn lex(s: &str) -> Vec<String> {
+        super::iter(s).map(|t| format!("{t}")).collect()
+    }
+
+    #[test]
+    fn strings() {
+        assert_eq!(
+            vec![
+                "Str(0,16)",
+                "Str(17,40)",
+                "Str(41,53)",
+                "NewLine(53,54)",
+                "Str(54,75)"
+            ],
+            lex(r#"'Hello World \'' "double 'single' quote" "hello world
+'another unterminated"#),
+        );
+    }
+
+    #[test]
+    fn numbers() {}
+
+    #[test]
+    fn compound_symbols() {}
+
+    #[test]
+    fn newlines() {}
+
+    #[test]
+    fn line_comments() {}
+
+    #[test]
+    fn inline_comments() {}
 }
