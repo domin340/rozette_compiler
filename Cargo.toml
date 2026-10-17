@@ -1,0 +1,10 @@
+[workspace]
+members = []
+resolver = "3"
+
+[package]
+# short for rozette_compiler: '<extension>c'
+name = "rozec"
+# major.minor.phase_version_aka_patch
+version = "0.0.phase1"
+edtion = 2026
