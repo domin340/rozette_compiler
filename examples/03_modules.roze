@@ -1,0 +1,19 @@
+pub const PI: number = 3.14159;
+pub static mut COUNTER: number = 0;
+const PRIVATE: number = 1;
+
+pub mod math {
+    pub fn square(x: number) -> number { x * x }
+    fn hidden() -> number { 0 }
+
+    pub mod trig {
+        pub const TAU: number = 6.28318;
+    }
+}
+
+use math::square;
+use math::trig::TAU;
+
+let a = square(4);
+let b = math::square(5);
+let c = math::trig::TAU * 2;

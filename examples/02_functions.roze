@@ -1,0 +1,37 @@
+fn add(a: number, b: number) -> number {
+    a + b // implicit return
+}
+
+fn explicit(a: number) -> number {
+    return a * 2;
+}
+
+// params default to `any`
+fn untyped(a, b) {
+    a + b
+}
+
+fn mutate(mut total: number, step: number) -> number {
+    total += step;
+    total
+}
+
+fn pair() -> (number, string) {
+    (1, "one")
+}
+
+fn nothing() -> () {}
+
+fn never_returns() -> ! {
+    panic("unreachable")
+}
+
+let sum = add(1, 2);
+let again = add(sum, add(3, 4));
+let t = pair();
+
+/*
+sum = 3
+again = 10
+t = (1, "one")
+*/

@@ -1,0 +1,24 @@
+//! File doc comment: variables, literals, operators
+
+/* block comment */
+/// doc comment on the item below
+let answer = 42;
+let mut counter = 0;
+let name = "Ellen";
+let other = 'single quoted';
+let flag = true;
+let nothing = false;
+
+counter += 1;
+counter = counter * 2 + answer;
+
+let _ = counter;           // Pat_Underscore
+let ratio = 10 / 4;
+let negated = -answer;
+let inverted = !flag;
+let both = flag && !nothing || false;
+let as_text = answer as string;   // conversion
+let as_num = "12" as number;
+
+let shadow = 1;
+let shadow = shadow + 1;   // shadowing is allowed

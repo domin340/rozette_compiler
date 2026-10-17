@@ -1,0 +1,271 @@
+# Phase 0
+
+- comments
+  - LineComment
+  - DocComment
+  - FileDocComment
+  - BlockComment
+- spans (u32, u32)
+
+# Phase 1
+
+- let keyword
+- mut keyword
+- as keyword
+- parse literals
+  - number (only check is performed in ast)
+  - string (single or double quote)
+  - true reserved identifier
+  - false reserved identifier
+- parse identifier
+- parse symbols
+- perform math operations
+- create variables
+  - parse mutability
+- modify the variable value
+
+NOTE: Pat_Ident store mutability
+
+[
+  Pat_Ident
+  Pat_Underscore
+  Expr_Literal
+  Expr_Ident
+  Expr_Binary
+  Expr_Unary
+  Expr_Assign
+  Expr_Cast
+  Expr_CompundAssign
+  Stmt_Empty
+  Stmt_Semi
+  Stmt_Let
+]
+
+# Phase 2
+
+- declare functions with return (explicit and implicit)
+  - parse function signature
+    - return type
+    - parameters with types, by default 'any'
+    - parse block
+    - return expression
+    - mut before parameter
+- pass variables and literals to function calls
+
+NOTE: for TypePat, right now the literals are not allowed
+
+[
+  TypePat_Never
+  TypePat_Unit
+  TypePat_Ident
+  TypePat_Tuple
+  TypePat_Any
+  Item_Fn
+  Expr_Return
+  Expr_Call
+  Stmt_Expr (semi less expression)
+]
+
+# Phase 3
+
+- pub keyword
+- static keyword
+- mod keyword
+- const keyword
+- use keyword
+- parse visibility:
+  - constants
+  - static variables
+  - functions
+  - modules
+
+[
+  Item_Use,
+  Item_Static
+  Item_Const
+  Item_Mod
+  Expr_Path
+  TypePat_Path
+]
+
+# Phase 4
+
+- parse conditions
+  - additionally, the condition return,
+    example: if true { 1 } else { 0 } 
+- parse loop
+  - parse labels ('label)
+  - break keyword
+  - continue keyword
+  - additionally, the break expression with return
+    example: loop { if i > 10 { break 10; } else { i += 1 } }
+- ranges
+
+[
+  Expr_Range
+    Inclusive: <expr> '..=' <expr>
+    Exclusive: <expr> '..'  <expr>
+  Expr_If
+  Expr_Loop
+  Expr_Break
+  Expr_Continue
+]
+
+# Phase 5
+
+- parse variable blocks
+- parse arrays
+  - trailing allowed
+  - syntax: [(Expr Comma)*]
+- parse anonymous objects
+  - will collide with Expr_Block,
+    thus you need to identify it first
+
+[
+  Expr_Tuple
+  Expr_Paren
+  Expr_Unit
+  Expr_Block
+    example: let a = { let b = 10; b * b }
+  Expr_Array
+  Expr_Table (anonymous object)
+  Expr_Index
+]
+
+# Phase 6 (Patterns)
+
+[
+  Pat_Path
+  Pat_Range
+  Pat_Paren
+  Pat_Tuple
+  Pat_Call
+    example: Some(x)
+  Pat_Or
+    example: A | B | C
+  Pat_Literal
+    example: number, string, true, false, table
+  Stmt_LetElse,
+    example: let Some(x) = optional else { panic("'optional' mustn't be None") }
+]
+
+# Phase 7 (remaining iterator keywords)
+
+- for keyword
+- while keyword
+- in keyword
+- parse for expression
+  - breaking with value is forbidden
+- parse while expression
+  - breaking with value is forbidden
+
+[
+  Expr_Let
+  Expr_For
+  Expr_While
+]
+
+# Phase 8
+
+- parse lambda expression
+  example: |x: number| -> number { x * x }
+  exampel: |x: number| x * x
+  - parameters between pipes
+  - optional return type
+  - optional block
+    - must distinguish between:
+      - block
+      - anonymous object (table)
+    - when block is not present, take single expression
+- interpolate strings, example:
+  - `hello {<expr>}` -> <start> 'hello ' { <expr> } <end>
+
+[
+  Expr_Lambda
+  Expr_StrInterp
+]
+
+# Phase 9
+
+- type keyword
+- enum keyword
+- self keyword
+- parse type
+  - block
+  - alias, examples:
+    - type x = <ident>
+    - type x = <ident> (| or &) <ident> repeat
+    - type x = <block_type>
+- parse enum (not tagged enum)
+- parse implementation block, parses:
+  - Item_Fn
+  - Item_Const
+  - Item_Static
+
+[
+  Item_Enum
+  Item_Type
+  Item_Impl
+  Expr_MethodCall
+  Epxr_Field
+]
+
+# Phase 10
+
+filler expressions for previous phase
+
+- update syntax for Expr_struct
+
+[
+  Expr_Try
+    example: hello?
+  Expr_Struct (initialize object)
+]
+
+# Phase 11
+
+match <expr> {
+  <pat> => <expr> // match arm pat
+  <pat> if <expr> => <expr> // match arm guarded
+  _ => <expr> // defualt arm
+}
+
+type MatchArm   = Box<Pat>
+type MatchGuard = Option<Box<Expr>>
+type MatchRhs   = Box<Expr>
+ThinVec<(MatchArm, MatchGuard, MatchRhs)>
+
+[
+  Expr_Match
+  MatchArm_Pat
+  MatchArm_Default
+  MatchArm_Guarded
+]
+
+# Phase 12
+
+[
+  Pat_Struct
+  Pat_Rest
+    example: '..'
+  Pat_Array
+    example: [<pat>] (expects 3 elements and exact values)
+    example: [<pat>, <pat_rest>] (expects that first 3 elements have exact values)
+  TypePat_Array
+  TypePat_Fn
+  TypePat_Literal
+  TypePat_Struct
+  TypePat_Table
+  Pat_Satisfies
+    example: <pat_ident> '@' <pat>
+]
+
+
+TODO:
+  tagged enums
+  attributes before items and blocks
+  const block
+  unsafe block? (for pontetial luau injections)
+  generic types
+  traits
+  unsafe extern "luau" {}

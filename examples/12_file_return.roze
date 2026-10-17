@@ -1,0 +1,11 @@
+/*
+file1:
+
+```roze
+let a = 10;
+a * a
+```
+*/
+
+use file1::return_value as twenty;
+print(twenty)

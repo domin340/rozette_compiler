@@ -1,0 +1,43 @@
+// Misc
+Comment(File | Doc | Line | Inline)
+Semi
+Newline
+
+// keywords
+Let
+Mut
+As
+
+// identifiers
+Ident
+Underscore
+
+// literals
+Num
+Str
+True
+False
+
+// comparison and assign
+Eq
+EqEq
+NotEq
+
+// compounds
+AsteriskEq
+SlashEq
+PlusEq
+MinusEq
+PercentEq
+
+// binary operators
+Asterisk
+Slash
+Plus
+Minus
+Percent
+
+// logical
+Exclamation
+PipePipe
+AmperAmper

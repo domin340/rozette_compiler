@@ -1,0 +1,19 @@
+enum Index { Number, String }
+
+type MyValue = { x: number } | { x: string }
+type MyTaggedEnum = { index: Index, value: MyValue }
+
+fn show(v: MyTaggedEnum) {
+    match v.index {
+        Index::Number => {
+            let inner = v.value as { x: number };
+            print(inner.x + 1);
+        }
+        Index::String => {
+            let inner = v.value as { x: string };
+            print(inner.x);
+        }
+    }
+}
+
+show({ index: Index::Number, value: { x: 5 } });

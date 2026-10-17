@@ -1,0 +1,30 @@
+enum Color { Red, Green, Blue }
+
+fn describe(c: Color) -> string {
+    match c {
+        Color::Red => "warm",
+        Color::Green | Color::Blue => "cool",
+    }
+}
+
+fn bucket(n: number) -> string {
+    match n {
+        0 => "zero",
+        1..=9 => "small",
+        10..100 => "medium",
+        _ => "large",
+    }
+}
+
+let (a, b) = (1, 2);
+let (mut x, _) = (10, 20);
+
+let Some(v) = lookup("key") else {
+    panic("key missing")
+};
+
+match lookup("key") {
+    Some(v) if v > 10 => print(`big {v}`),
+    Some(v) => print(`small {v}`),
+    None => print("nothing"),
+}

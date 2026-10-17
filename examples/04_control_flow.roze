@@ -1,0 +1,29 @@
+let n = 7;
+
+let label = if n > 5 { "big" } else { "small" };
+
+let grade = if n > 9 {
+    "A"
+} else if n > 5 {
+    "B"
+} else {
+    "C"
+};
+
+let mut i = 0;
+let found = loop {
+    if i > 10 { break i * 2; } else { i += 1 }
+};
+
+'outer: loop {
+    let mut j = 0;
+    loop {
+        j += 1;
+        if j == 3 { continue 'outer; }
+        if j > 5 { break 'outer; }
+    }
+}
+
+let exclusive = 0..10;
+let inclusive = 0..=10;
+let from_exprs = (n - 2)..(n + 2);

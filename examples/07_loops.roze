@@ -1,0 +1,27 @@
+for i in 0..5 {
+    print(`i = {i}`);
+}
+
+for item in [10, 20, 30] {
+    print(item);
+}
+
+let mut n = 0;
+while n < 10 {
+    n += 1;
+    if n == 5 { continue; }
+}
+
+'rows: for r in 0..3 {
+    for c in 0..3 {
+        if r * c == 2 { break 'rows; }
+    }
+}
+
+if let Some(v) = lookup("a") {
+    print(v);
+}
+
+while let Some(job) = next_job() {
+    run(job);
+}

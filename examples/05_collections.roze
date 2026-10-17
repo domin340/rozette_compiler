@@ -1,0 +1,20 @@
+let empty = ();                       // Expr_Unit
+let single = (1);                     // Expr_Paren
+let tuple = (1, "two", true);
+let nested = ((1, 2), (3, 4));
+
+let items = [1, 2, 3, 4,];            // trailing comma
+let matrix = [[1, 0], [0, 1]];
+let first = items[0];
+let cell = matrix[1][0];
+
+let origin = { x: 0, y: 0 };          // Expr_Table
+let empty_table = {};
+let value = { let a = 10; a * a };    // Expr_Block
+
+let player = {
+    name: "Ellen",
+    stats: { hp: 100, mp: 20 },
+    tags: ["fast", "ranged"],
+};
+let hp = player.stats.hp;

@@ -1,0 +1,33 @@
+pub enum Index { Number, String }
+
+pub type Point = { x: number, y: number }
+
+pub type Id = number
+pub type Either = Point | { x: string }
+
+impl Point {
+    pub const ORIGIN: number = 0;
+
+    pub fn new(x: number, y: number) -> Self {
+        Self { x, y }
+    }
+
+    pub fn length(self) -> number {
+        (self.x * self.x + self.y * self.y)
+    }
+
+    pub fn moved(mut self, dx: number) -> Self {
+        self.x += dx;
+        self
+    }
+}
+
+let p = Point::new(3, 4).moved(1);
+let len = p.length();
+let q = Point { x: 1, ..p }; // struct update
+
+fn parse(text: string) -> Result<number, string> {
+    let n = to_number(text)?; // Expr_Try
+    if n < 0 { return Err("negative"); }
+    Ok(n)
+}
