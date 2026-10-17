@@ -244,19 +244,7 @@ fn is_ident_continue(c: char) -> bool {
     unicode_ident::is_xid_continue(c) || c == '_'
 }
 
-pub fn lex(s: &str) -> impl Iterator<Item = Token> {
-    let mut lexer = Lexer::new(s);
-    std::iter::from_fn(move || {
-        let token = lexer.next_token();
-        if token.kind == TokenKind::Eof {
-            None
-        } else {
-            Some(token)
-        }
-    })
-}
-
-pub fn lex_all(s: &str) -> Vec<Token> {
+pub fn lex(s: &str) -> Vec<Token> {
     let mut lexer = Lexer::new(s);
     let mut v = vec![];
 
