@@ -1,3 +1,3 @@
 [workspace]
-members = ["crates/roze_parser"]
+members = ["crates/roze_lexer"]
 resolver = "3"
