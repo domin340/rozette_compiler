@@ -1,7 +1,7 @@
 mod tokens;
 
 use std::str::Chars;
-use tokens::{CommentKind, Token, TokenKind};
+pub use tokens::{CommentKind, Token, TokenKind};
 
 #[derive(Debug)]
 pub struct Lexer<'source> {
