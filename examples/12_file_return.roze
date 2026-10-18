@@ -7,5 +7,6 @@ a * a
 ```
 */
 
-use file1::return_value as twenty;
-print(twenty)
+use file1::return_value as value;
+
+print(value);
