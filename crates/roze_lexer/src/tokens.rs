@@ -1,12 +1,16 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(displaydoc::Display, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CommentKind {
+    /// <file_comment>
     File,
+    /// <doc_comment>
     Doc,
+    /// <line_comment>
     Line,
+    /// <inline_comment>
     Inline { closed: bool },
 }
 
-impl std::fmt::Display for CommentKind {
+impl std::fmt::Debug for CommentKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::File => "FileComment",
@@ -92,7 +96,7 @@ pub struct Token {
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
-            TokenKind::Comment(c) => write!(f, "{c}")?,
+            TokenKind::Comment(c) => write!(f, "{c:?}")?,
             kind => write!(f, "{kind:?}")?,
         }
 
