@@ -64,9 +64,16 @@ impl<'source> Lexer<'source> {
         self.chars.as_str()
     }
 
+    #[inline(always)]
+    fn set_index_nth(&mut self, p: Option<usize>) {
+        self.chars = match p {
+            Some(index) => self.as_str()[index..].chars(),
+            None => "".chars(),
+        };
+    }
+
     fn line_comment(&mut self) -> TokenKind {
-        debug_assert_eq!((self.first(), self.second()), ('/', '/'));
-        self.bump(); // '/'
+        debug_assert_eq!((self.prev, self.first()), (Some('/'), '/'));
         self.bump(); // '/'
 
         let com_kind = match self.first() {
@@ -81,34 +88,23 @@ impl<'source> Lexer<'source> {
     }
 
     fn inline_comment(&mut self) -> TokenKind {
-        debug_assert_eq!((self.first(), self.second()), ('/', '*'));
-        self.bump();
-        self.bump();
+        debug_assert_eq!((self.prev, self.first()), (Some('/'), '*'));
+        self.bump(); // '*'
 
         let bytes = self.as_str().as_bytes();
-        let p = memchr::memchr_iter(b'*', bytes)
-            .find(|&index| bytes.get(index + 1).copied().unwrap_or(0) == b'/');
+        let idx = memchr::memchr_iter(b'*', bytes)
+            .find(|&index| bytes.get(index + 1).copied().unwrap_or(0) == b'/')
+            .map(|found_index| found_index + 2); // skip '*/' characters
+        self.set_index_nth(idx);
 
-        let terminated = match p {
-            Some(index) => {
-                self.chars = self.as_str()[index..].chars();
-                true
-            }
-            None => {
-                self.chars = "".chars();
-                false
-            }
-        };
-
+        let terminated = idx.is_some();
         TokenKind::Comment(CommentKind::Inline { terminated })
     }
 
     fn eat_until_newline(&mut self) {
         let bytes = self.chars.as_str().as_bytes();
-        self.chars = match memchr::memchr2(b'\r', b'\n', bytes) {
-            Some(index) => self.as_str()[index..].chars(),
-            _ => "".chars(),
-        };
+        let idx = memchr::memchr2(b'\r', b'\n', bytes);
+        self.set_index_nth(idx);
     }
 
     fn eat_while(&mut self, p: impl Fn(char) -> bool) {
@@ -309,8 +305,6 @@ pub fn lex(s: &str) -> Vec<Token> {
 
 #[cfg(test)]
 mod tests {
-    use super::{CommentKind, Lexer, Token, TokenKind};
-
     fn lex(s: &str) -> Vec<String> {
         super::iter(s).map(|t| format!("{t}")).collect()
     }
@@ -337,11 +331,31 @@ mod tests {
     fn compound_symbols() {}
 
     #[test]
-    fn newlines() {}
+    fn line_comments() {
+        assert_eq!(
+            vec![
+                "LineComment(0,14)",
+                "NewLine(14,15)",
+                "DocComment(15,30)",
+                "NewLine(30,31)",
+                "FileComment(31,47)",
+            ],
+            lex(r#"// hello world
+/// doc comment
+//! file comment"#),
+        );
+    }
 
     #[test]
-    fn line_comments() {}
-
-    #[test]
-    fn inline_comments() {}
+    fn inline_comments() {
+        assert_eq!(
+            vec![
+                "InlineComment(0,22)",
+                "InlineComment(23,35)",
+                "InlineComment(36,51)"
+            ],
+            lex(r#"/*
+block /* nothing */ /* inline */ /* unterminated"#)
+        )
+    }
 }
