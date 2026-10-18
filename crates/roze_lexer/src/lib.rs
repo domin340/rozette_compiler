@@ -225,12 +225,12 @@ impl<'source> Lexer<'source> {
             },
             '+' if self.first() == '=' => {
                 self.bump();
-                TokenKind::Plus
+                TokenKind::PlusEq
             }
             '+' => TokenKind::Plus,
-            '-' if self.first() == '-' => {
+            '-' if self.first() == '=' => {
                 self.bump();
-                TokenKind::Minus
+                TokenKind::MinusEq
             }
             '-' => TokenKind::Minus,
             '%' if self.first() == '=' => {
@@ -355,7 +355,27 @@ mod tests {
     }
 
     #[test]
-    fn compound_symbols() {}
+    fn compounds_and_symbols() {
+        assert_eq!(
+            vec![
+                "Plus(0,1)",
+                "PlusEq(2,4)",
+                "Minus(5,6)",
+                "MinusEq(7,9)",
+                "Asterisk(10,11)",
+                "AsteriskEq(12,14)",
+                "Slash(15,16)",
+                "SlashEq(17,19)",
+                "Percent(20,21)",
+                "PercentEq(22,24)",
+                "Eq(25,26)",
+                "EqEq(27,29)",
+                "NotEq(30,32)",
+                "Exclamation(33,34)",
+            ],
+            lex("+ += - -= * *= / /= % %= = == != !")
+        )
+    }
 
     #[test]
     fn line_comments() {
