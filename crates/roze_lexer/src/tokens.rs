@@ -41,7 +41,9 @@ pub enum TokenKind {
     /// <num>
     Num,
     /// <str>
-    Str { closed: bool },
+    Str,
+    /// <str_unterminated>
+    OpenStr,
     /// `true`
     True,
     /// `false`
@@ -91,8 +93,6 @@ impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
             TokenKind::Comment(c) => write!(f, "{c}")?,
-            TokenKind::Str { closed: true } => write!(f, "Str")?,
-            TokenKind::Str { closed: false } => write!(f, "OpenStr")?,
             kind => write!(f, "{kind:?}")?,
         }
 

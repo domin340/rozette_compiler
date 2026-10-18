@@ -181,7 +181,11 @@ impl<'source> Lexer<'source> {
             }
         };
 
-        TokenKind::Str { closed }
+        if closed {
+            TokenKind::Str
+        } else {
+            TokenKind::OpenStr
+        }
     }
 
     pub fn next_token(&mut self) -> Token {
