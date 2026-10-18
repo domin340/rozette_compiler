@@ -97,7 +97,11 @@ impl<'source> Lexer<'source> {
         self.set_index_nth(idx);
 
         let closed = idx.is_some();
-        TokenKind::Comment(CommentKind::Inline { closed })
+        TokenKind::Comment(if closed {
+            CommentKind::Inline
+        } else {
+            CommentKind::OpenInline
+        })
     }
 
     fn eat_until_newline(&mut self) {
