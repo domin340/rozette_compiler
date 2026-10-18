@@ -93,7 +93,7 @@ impl<'source> Lexer<'source> {
         let bytes = self.as_str().as_bytes();
         let idx = memchr::memchr_iter(b'*', bytes)
             .find(|&index| bytes.get(index + 1).copied().unwrap_or(0) == b'/')
-            .map(|found_index| found_index + 2); // skip '*/' characters
+            .map(|found_index| found_index + 2); // consume '*/'
         self.set_index_nth(idx);
 
         let terminated = idx.is_some();
