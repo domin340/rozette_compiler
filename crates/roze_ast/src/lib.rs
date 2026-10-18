@@ -1,14 +1,31 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub use roze_span::{Span, Symbol};
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod ast_decl;
+pub mod parser;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub use ast_decl::{BinOp, Expr, ExprKind, Lit, Pat, PatKind, Stmt, StmtKind, UnaryOp};
+
+/// Defines convenient constructors or ast members.
+/// `ast!(<what_ast>, <kind>, <span>)`
+/// E.g.: `ast!(expr, ExprKind::Dummy, Span::new(1, 2))`
+#[macro_export]
+macro_rules! ast {
+    (expr, $kind:expr, $span:expr) => {
+        Expr {
+            kind: $kind,
+            span: $span,
+        }
+    };
+    (stmt, $kind:expr, $span:expr) => {
+        Stmt {
+            kind: $kind,
+            span: $span,
+        }
+    };
+    (pat, $kind:expr, $span:expr) => {
+        Pat {
+            kind: $kind,
+            span: $span,
+        }
+    };
 }
