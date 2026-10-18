@@ -96,8 +96,8 @@ impl<'source> Lexer<'source> {
             .map(|found_index| found_index + 2); // consume '*/'
         self.set_index_nth(idx);
 
-        let terminated = idx.is_some();
-        TokenKind::Comment(CommentKind::Inline { terminated })
+        let closed = idx.is_some();
+        TokenKind::Comment(CommentKind::Inline { closed })
     }
 
     fn eat_until_newline(&mut self) {
@@ -164,9 +164,9 @@ impl<'source> Lexer<'source> {
     fn string(&mut self, quote: char) -> TokenKind {
         debug_assert!(matches!(quote, '"' | '\''));
 
-        loop {
+        let closed = loop {
             match self.first() {
-                EOF | '\r' | '\n' => break, // unterminated
+                EOF | '\r' | '\n' => break false,
                 '\\' => {
                     self.bump();
                     self.bump();
@@ -175,13 +175,13 @@ impl<'source> Lexer<'source> {
                     self.bump();
 
                     if c == quote {
-                        break; // terminated
+                        break true;
                     }
                 }
             }
-        }
+        };
 
-        TokenKind::Str
+        TokenKind::Str { closed }
     }
 
     pub fn next_token(&mut self) -> Token {
@@ -331,9 +331,9 @@ mod tests {
             vec![
                 "Str(0,16)",
                 "Str(17,40)",
-                "Str(41,53)",
+                "OpenStr(41,53)",
                 "NewLine(53,54)",
-                "Str(54,75)"
+                "OpenStr(54,75)"
             ],
             lex(r#"'Hello World \'' "double 'single' quote" "hello world
 'another unterminated"#),
@@ -399,7 +399,7 @@ mod tests {
             vec![
                 "InlineComment(0,22)",
                 "InlineComment(23,35)",
-                "InlineComment(36,51)"
+                "OpenInlineComment(36,51)"
             ],
             lex(r#"/*
 block /* nothing */ /* inline */ /* unterminated"#)
