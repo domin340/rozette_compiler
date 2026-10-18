@@ -42,7 +42,7 @@ pub enum TokenKind {
     Num,
     /// <str>
     Str,
-    /// <str_unterminated>
+    /// <open_str>
     OpenStr,
     /// `true`
     True,
