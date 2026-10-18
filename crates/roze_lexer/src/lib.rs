@@ -15,12 +15,11 @@ pub const EOF: char = '\0';
 
 impl<'source> Lexer<'source> {
     pub fn new(s: &'source str) -> Self {
-        if s.len() > u32::MAX as usize {
-            panic!(
-                "compiler is not designed for reading files >{} bytes",
-                u32::MAX
-            );
-        }
+        assert!(
+            s.len() <= u32::MAX as usize,
+            "source byte size exceeds expected cap: {}",
+            u32::MAX
+        );
 
         Self {
             s,
