@@ -120,12 +120,30 @@ impl<'source> Lexer<'source> {
         self.eat_while(|c| c.is_digit(base));
     }
 
-    fn number(&mut self) -> TokenKind {
-        // base
-        self.eat_ident_continue();
+    fn number(&mut self, first: char) -> TokenKind {
+        debug_assert!(first.is_ascii_digit());
+
+        // eat the signature and what comes to coresponding base
+        // important not to skip this phase to read exponent appropriately
+        match (first, self.first()) {
+            ('0', 'b' | 'B') => {
+                self.bump(); // binary sig
+                self.eat_digits(2);
+            }
+            ('0', 'o' | 'O') => {
+                self.bump(); // octal sig
+                self.eat_digits(8);
+            }
+            ('0', 'x' | 'X') => {
+                self.bump(); // hex sig
+                self.eat_digits(16);
+            }
+            _ => self.eat_digits(10),
+        }
 
         // fraction
         if self.first() == '.' && self.second().is_ascii_digit() {
+            self.bump(); // '.'
             self.eat_digits(10);
         }
 
@@ -138,7 +156,6 @@ impl<'source> Lexer<'source> {
             }
         }
 
-        // whatever is after that still qualifies as an identifier
         self.eat_ident_continue();
 
         TokenKind::Num
@@ -229,7 +246,7 @@ impl<'source> Lexer<'source> {
                 self.bump();
                 TokenKind::PipePipe
             }
-            '0'..='9' => self.number(),
+            digit @ ('0'..='9') => self.number(digit),
             quote @ ('\'' | '"') => self.string(quote),
             c if is_ident_start(c) => {
                 self.eat_ident_continue();
@@ -324,7 +341,18 @@ mod tests {
     }
 
     #[test]
-    fn numbers() {}
+    fn numbers() {
+        assert_eq!(
+            vec![
+                "Num(0,11)",
+                "Num(12,17)",
+                "Num(18,19)",
+                "Num(20,23)",
+                "Num(24,31)",
+            ],
+            lex("0x1f01.2e+2 0aaaa 0 0e2 0.2E-53"),
+        );
+    }
 
     #[test]
     fn compound_symbols() {}
