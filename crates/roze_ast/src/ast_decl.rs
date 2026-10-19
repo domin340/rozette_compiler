@@ -23,12 +23,17 @@ pub enum BinOp {
     Add,
     Sub,
     Mod,
-    /// Logical operator 'and' (&&),
-    /// not applicable to compounds
     And,
-    /// Logical operator 'or'  (||),
-    /// not applicable to compounds
     Or,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum CompoundOp {
+    Mul,
+    Div,
+    Add,
+    Sub,
+    Mod,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -48,7 +53,7 @@ pub enum ExprKind {
     /// Compound binary operation (`a += 2`).
     /// For simplicity the compound uses [`BinaryOp`],
     /// although the compound does not support logical operators.
-    Compound(Box<Expr>, BinOp, Box<Expr>),
+    Compound(Box<Expr>, CompoundOp, Box<Expr>),
     /// Assignment (`a = 2`)
     Assign(Box<Expr>, Box<Expr>),
     // TODO: Cast(Box<Expr>, Box<TyPat>)

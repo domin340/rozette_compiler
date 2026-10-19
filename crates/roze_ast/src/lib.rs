@@ -3,7 +3,7 @@ pub use roze_span::{Span, Symbol};
 mod ast_decl;
 pub mod parser;
 
-pub use ast_decl::{BinOp, Expr, ExprKind, Lit, Pat, PatKind, Stmt, StmtKind, UnaryOp};
+pub use ast_decl::{BinOp, CompoundOp, Expr, ExprKind, Lit, Pat, PatKind, Stmt, StmtKind, UnaryOp};
 
 /// Defines convenient constructors for ast members.
 /// `ast!(<what_ast>, <kind>, <span>)`
