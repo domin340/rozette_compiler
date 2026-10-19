@@ -50,7 +50,7 @@ impl Parser {
             kind => panic!("Unexpected: {kind} found in lhs of expr."),
         };
 
-        ast!(expr, expr_kind, Span::new(start, self.prev.end))
+        ast!(expr, expr_kind, self.record_span(start))
     }
 
     pub(super) fn parse_expr_in(&mut self, prec: Prec) -> Expr {

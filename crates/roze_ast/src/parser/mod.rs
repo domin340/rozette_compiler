@@ -28,8 +28,14 @@ impl Parser {
         }
     }
 
+    #[inline]
     pub(super) fn span(&self) -> Span {
         span(&self.token())
+    }
+
+    #[inline]
+    pub(super) fn record_span(&self, start: u32) -> Span {
+        Span::new(start, self.prev.end)
     }
 
     #[inline]
