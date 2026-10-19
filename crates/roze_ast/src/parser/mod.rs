@@ -1,3 +1,4 @@
+mod expr;
 mod token_stream;
 
 use roze_lexer::Token;
