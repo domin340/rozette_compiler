@@ -1,11 +1,12 @@
 mod expr;
+mod source_struct;
 mod token_stream;
 
-use crate::Span;
+use crate::{Span, parser::source_struct::Source};
 use roze_lexer::Token;
 use token_stream::TokenStream;
 
-#[inline]
+#[inline(always)]
 pub(super) fn span(t: &Token) -> Span {
     Span {
         start: t.start,
@@ -13,16 +14,18 @@ pub(super) fn span(t: &Token) -> Span {
     }
 }
 
-pub struct Parser {
+pub struct Parser<'source> {
+    s: Source<'source>,
     stream: TokenStream,
     /// Token previously advanced with [`TokenStream`].
     /// Initially takes [`Token::DUMMY`] value.
     prev: Token,
 }
 
-impl Parser {
-    pub fn new(s: &str) -> Self {
+impl<'source> Parser<'source> {
+    pub fn new(s: &'source str) -> Self {
         Self {
+            s: Source(s),
             stream: TokenStream::new(s),
             prev: Token::DUMMY,
         }
