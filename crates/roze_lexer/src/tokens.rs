@@ -91,6 +91,14 @@ pub struct Token {
     pub end: u32,
 }
 
+impl Token {
+    pub const DUMMY: Token = Token {
+        kind: TokenKind::Invalid,
+        start: u32::MAX,
+        end: u32::MAX,
+    };
+}
+
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
