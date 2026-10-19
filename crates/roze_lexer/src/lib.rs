@@ -217,6 +217,16 @@ impl<'source> Lexer<'source> {
                 TokenKind::NotEq
             }
             '!' => TokenKind::Exclamation,
+            '<' if self.first() == '=' => {
+                self.bump();
+                TokenKind::LtEq
+            }
+            '<' => TokenKind::Lt,
+            '>' if self.first() == '=' => {
+                self.bump();
+                TokenKind::GtEq
+            }
+            '>' => TokenKind::Gt,
             '*' if self.first() == '=' => {
                 self.bump();
                 TokenKind::AsteriskEq

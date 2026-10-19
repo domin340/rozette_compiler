@@ -48,6 +48,14 @@ pub enum TokenKind {
     EqEq,
     /// `!=`
     NotEq,
+    /// `<`
+    Lt,
+    /// `<=`
+    LtEq,
+    /// `>`
+    Gt,
+    /// `>=`
+    GtEq,
     /// `*`
     Asterisk,
     /// `/`
