@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+roze_lexer = { version = "0.1.0", path = "../roze_lexer" }
 roze_span = { version = "0.1.0", path = "../roze_span" }

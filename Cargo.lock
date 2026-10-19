@@ -90,6 +90,7 @@ dependencies = [
 name = "roze_ast"
 version = "0.1.0"
 dependencies = [
+ "roze_lexer",
  "roze_span",
 ]
 
