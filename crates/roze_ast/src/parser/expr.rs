@@ -1,4 +1,4 @@
-use crate::{Expr, ExprKind, Lit, UnaryOp, ast, parser::Parser};
+use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, ast, parser::Parser};
 use TokenKind::*;
 use roze_lexer::TokenKind;
 use roze_span::Symbol;
@@ -17,7 +17,7 @@ pub enum Prec {
 }
 
 impl Prec {
-    pub fn op_prec(token: TokenKind) -> Option<Self> {
+    pub fn token(token: TokenKind) -> Option<Self> {
         Some(match token {
             Asterisk | Slash | Percent => Self::Product,
             Lt | Gt | LtEq | GtEq => Self::Comp,
@@ -32,10 +32,10 @@ impl Prec {
 impl Parser<'_> {
     pub(super) fn parse_lhs_expr(&mut self) -> Expr {
         let token = self.token();
+        self.advance(); // skipped in every case
+
         let expr_kind = match token.kind {
             unary @ (Minus | Exclamation) => {
-                self.advance(); // advance unary operator
-
                 let op = match unary {
                     Minus => UnaryOp::Minus,
                     Exclamation => UnaryOp::BitNot,
@@ -45,32 +45,72 @@ impl Parser<'_> {
                 let rhs = self.parse_expr_in(Prec::Unary).into();
                 ExprKind::Unary(op, rhs)
             }
-            Str => {
-                self.advance();
-                ExprKind::Lit(self.parse_str_lit(&token))
-            }
-            Num => {
-                self.advance();
-                ExprKind::Lit(self.parse_num_lit(&token))
-            }
-            bool @ (True | False) => {
-                self.advance();
-                let val = bool == True;
-                ExprKind::Lit(Lit::Bool(val))
+            Str => ExprKind::Lit(self.parse_str_lit(&token)),
+            Num => ExprKind::Lit(self.parse_num_lit(&token)),
+            val @ (True | False) => {
+                let bool = Lit::Bool(val == True);
+                ExprKind::Lit(bool)
             }
             Ident => {
-                self.advance();
                 let sym = Symbol::intern(&self.s[&token]);
                 ExprKind::Ident(sym)
             }
-            kind => panic!("Unexpected: {kind} found in lhs of expr."),
+            k => panic!("unsupported token {k} while parsing lhs expression"),
         };
 
         ast!(expr, expr_kind, self.record_span(token.start))
     }
 
-    pub(super) fn parse_expr_in(&mut self, prec: Prec) -> Expr {
-        todo!()
+    pub(super) fn parse_expr_in(&mut self, min_prec: Prec) -> Expr {
+        let start_pos = self.token().start;
+        let mut lhs = self.parse_lhs_expr();
+
+        while let token = self.token()
+            && let Some(this_prec) = Prec::token(token.kind)
+            && this_prec > min_prec
+        {
+            self.advance(); // skipping the operator
+
+            match token.kind {
+                k @ (Plus | Minus | Asterisk | Slash | Percent) => {
+                    let bin_op = match k {
+                        Plus => BinOp::Add,
+                        Minus => BinOp::Sub,
+                        Asterisk => BinOp::Mul,
+                        Slash => BinOp::Div,
+                        Percent => BinOp::Mod,
+                        _ => panic!("`compound_op` match statement does not guard all choices"),
+                    };
+
+                    let rhs = self.parse_expr_in(this_prec);
+
+                    lhs = Expr {
+                        kind: ExprKind::Binary(lhs.into(), bin_op, rhs.into()),
+                        span: self.record_span(start_pos),
+                    }
+                }
+                k @ (PlusEq | MinusEq | AsteriskEq | SlashEq | PercentEq) => {
+                    let compound_op = match k {
+                        PlusEq => CompoundOp::Add,
+                        MinusEq => CompoundOp::Sub,
+                        AsteriskEq => CompoundOp::Mul,
+                        SlashEq => CompoundOp::Div,
+                        PercentEq => CompoundOp::Mod,
+                        _ => panic!("`compound_op` match statement does not guard all choices"),
+                    };
+
+                    let rhs = self.parse_expr_in(this_prec);
+
+                    lhs = Expr {
+                        kind: ExprKind::Compound(lhs.into(), compound_op, rhs.into()),
+                        span: self.record_span(start_pos),
+                    };
+                }
+                k => panic!("unsupported token {k} while parsing expression"),
+            }
+        }
+
+        lhs
     }
 
     #[inline]
