@@ -3,6 +3,8 @@ mod tokens;
 use std::str::Chars;
 pub use tokens::{CommentKind, Token, TokenKind};
 
+pub const EOF: char = '\0';
+
 #[derive(Debug)]
 pub struct Lexer<'source> {
     s: &'source str,
@@ -10,8 +12,6 @@ pub struct Lexer<'source> {
     #[cfg(debug_assertions)]
     prev: Option<char>,
 }
-
-pub const EOF: char = '\0';
 
 impl<'source> Lexer<'source> {
     pub fn new(s: &'source str) -> Self {
@@ -120,43 +120,45 @@ impl<'source> Lexer<'source> {
         self.eat_while(is_ident_continue);
     }
 
-    fn eat_digits(&mut self, base: u32) {
-        self.eat_while(|c| c.is_digit(base));
+    fn eat_int(&mut self, base: u32) {
+        self.eat_while(|c| c.is_digit(base) || c == '_');
     }
 
     fn number(&mut self, first: char) -> TokenKind {
         debug_assert!(first.is_ascii_digit());
 
-        // eat the signature and what comes to coresponding base
-        // important not to skip this phase to read exponent appropriately
-        match (first, self.first()) {
+        let radix: u32 = match (first, self.first()) {
             ('0', 'b' | 'B') => {
                 self.bump(); // binary sig
-                self.eat_digits(2);
+                2
             }
             ('0', 'o' | 'O') => {
                 self.bump(); // octal sig
-                self.eat_digits(8);
+                8
             }
             ('0', 'x' | 'X') => {
                 self.bump(); // hex sig
-                self.eat_digits(16);
+                16
             }
-            _ => self.eat_digits(10),
-        }
+            _ => 10,
+        };
 
-        // fraction
-        if self.first() == '.' && self.second().is_ascii_digit() {
-            self.bump(); // '.'
-            self.eat_digits(10);
-        }
+        self.eat_int(radix);
 
-        // exponent signature
-        if matches!(self.first(), 'e' | 'E') {
-            self.bump();
+        if radix == 10 {
+            // fraction
+            if self.first() == '.' && self.second().is_ascii_digit() {
+                self.bump(); // '.'
+                self.eat_int(10);
+            }
 
-            if matches!(self.first(), '+' | '-') {
+            // exponent signature
+            if matches!(self.first(), 'e' | 'E') {
                 self.bump();
+
+                if matches!(self.first(), '+' | '-') {
+                    self.bump();
+                }
             }
         }
 
@@ -362,13 +364,14 @@ mod tests {
     fn numbers() {
         assert_eq!(
             vec![
-                "Num(0,11)",
+                "Num(0,6)",
+                "Num(7,11)",
                 "Num(12,17)",
                 "Num(18,19)",
                 "Num(20,23)",
                 "Num(24,31)",
             ],
-            lex("0x1f01.2e+2 0aaaa 0 0e2 0.2E-53"),
+            lex("0x1f01 2e+2 0aaaa 0 0e2 0.2E-53"),
         );
     }
 
