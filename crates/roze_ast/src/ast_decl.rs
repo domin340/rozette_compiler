@@ -6,12 +6,6 @@ pub enum Lit {
     /// Meaning, span captures the entire thing,
     /// while SymbolId only the data between quotes.
     Str(Symbol),
-    /// Fitting integer literals.
-    /// To be integer the token may not have exponent.
-    Int(i64),
-    /// Possible values for 'Num':
-    /// - numbers exceeding standard max bit size in luau
-    /// - floats
     Num(Symbol),
     Bool(bool),
 }
