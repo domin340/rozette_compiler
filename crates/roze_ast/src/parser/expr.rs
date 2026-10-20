@@ -93,7 +93,6 @@ impl Parser<'_> {
                     };
 
                     let rhs = self.parse_expr_in(this_prec);
-
                     lhs = Expr {
                         kind: ExprKind::Binary(lhs.into(), bin_op, rhs.into()),
                         span: self.record_span(start_pos),
@@ -110,11 +109,17 @@ impl Parser<'_> {
                     };
 
                     let rhs = self.parse_expr_in(this_prec);
-
                     lhs = Expr {
                         kind: ExprKind::Compound(lhs.into(), compound_op, rhs.into()),
                         span: self.record_span(start_pos),
                     };
+                }
+                Eq => {
+                    let rhs = self.parse_expr_in(this_prec);
+                    lhs = Expr {
+                        kind: ExprKind::Assign(lhs.into(), rhs.into()),
+                        span: self.record_span(start_pos),
+                    }
                 }
                 k => panic!("unsupported token {k} while parsing expression"),
             }
