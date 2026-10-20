@@ -1,6 +1,6 @@
 use crate::{Expr, ExprKind, Lit, UnaryOp, ast, parser::Parser};
 use TokenKind::*;
-use roze_lexer::{Token, TokenKind};
+use roze_lexer::TokenKind;
 use roze_span::Symbol;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,29 +30,6 @@ impl Prec {
 }
 
 impl Parser<'_> {
-    fn parse_str_lit(&mut self, t: &Token) -> Lit {
-        let s = &self.s[t];
-
-        let bytes = s.as_bytes();
-        if bytes.len() < 2 // the length must be sufficient, at least have 2 quotes
-        || !matches!(bytes[0], b'\'' | b'"') // first character must be quote
-        // both are the same quotes
-        || bytes[0] != bytes.last().copied().unwrap()
-        {
-            panic!("Expected {s} str lit to start and end with the same quote.");
-        }
-
-        // intern inner data and return lit
-        let s = &s[1..(s.len() - 1)];
-        let str_sym = Symbol::intern(s);
-
-        Lit::Str(str_sym)
-    }
-
-    fn parse_num_lit(&mut self, t: &Token) -> Lit {
-        todo!()
-    }
-
     pub(super) fn parse_lhs_expr(&mut self) -> Expr {
         let token = self.token();
         let expr_kind = match token.kind {
