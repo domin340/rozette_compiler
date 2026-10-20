@@ -19,6 +19,11 @@ pub enum BinOp {
     Mod,
     And,
     Or,
+    EqEq,
+    Lt,
+    LtEq,
+    Gt,
+    GtEq,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
