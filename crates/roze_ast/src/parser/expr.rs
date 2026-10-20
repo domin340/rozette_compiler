@@ -1,4 +1,4 @@
-use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, ast, parser::Parser};
+use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, parser::Parser};
 use TokenKind::*;
 use roze_lexer::TokenKind;
 use roze_span::Symbol;
@@ -39,7 +39,7 @@ impl Parser<'_> {
                 let op = match unary {
                     Minus => UnaryOp::Minus,
                     Exclamation => UnaryOp::BitNot,
-                    _ => panic!("`unary` does not guard all the possible cases"),
+                    _ => unreachable!("`unary` doesn't guard all cases"),
                 };
 
                 let rhs = self.parse_expr_in(Prec::Unary).into();
@@ -58,7 +58,10 @@ impl Parser<'_> {
             k => panic!("unsupported token {k} while parsing lhs expression"),
         };
 
-        ast!(expr, expr_kind, self.record_span(token.start))
+        Expr {
+            kind: expr_kind,
+            span: self.record_span(token.start),
+        }
     }
 
     pub(super) fn parse_expr_in(&mut self, min_prec: Prec) -> Expr {
@@ -72,14 +75,21 @@ impl Parser<'_> {
             self.advance(); // skipping the operator
 
             match token.kind {
-                k @ (Plus | Minus | Asterisk | Slash | Percent) => {
+                k @ (Plus | Minus | Asterisk | Slash | Percent | AmperAmper | PipePipe | Lt
+                | LtEq | Gt | GtEq | EqEq) => {
                     let bin_op = match k {
                         Plus => BinOp::Add,
                         Minus => BinOp::Sub,
                         Asterisk => BinOp::Mul,
                         Slash => BinOp::Div,
                         Percent => BinOp::Mod,
-                        _ => panic!("`compound_op` match statement does not guard all choices"),
+                        AmperAmper => BinOp::And,
+                        PipePipe => BinOp::Or,
+                        Lt => BinOp::Lt,
+                        LtEq => BinOp::LtEq,
+                        Gt => BinOp::Gt,
+                        GtEq => BinOp::GtEq,
+                        _ => unreachable!("`bin_op` doesn't goard all cases"),
                     };
 
                     let rhs = self.parse_expr_in(this_prec);
@@ -96,7 +106,7 @@ impl Parser<'_> {
                         AsteriskEq => CompoundOp::Mul,
                         SlashEq => CompoundOp::Div,
                         PercentEq => CompoundOp::Mod,
-                        _ => panic!("`compound_op` match statement does not guard all choices"),
+                        _ => unreachable!("`compound_op` doesn't guard all cases"),
                     };
 
                     let rhs = self.parse_expr_in(this_prec);
