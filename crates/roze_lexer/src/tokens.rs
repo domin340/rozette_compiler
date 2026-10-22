@@ -111,3 +111,27 @@ impl std::fmt::Display for Token {
         write!(f, "({},{})", self.start, self.end)
     }
 }
+
+pub fn is_ident_start(c: char) -> bool {
+    unicode_ident::is_xid_start(c) || c == '_'
+}
+
+pub fn is_ident_continue(c: char) -> bool {
+    unicode_ident::is_xid_continue(c) || c == '_'
+}
+
+pub fn classify_ident(s: &str) -> TokenKind {
+    match s.len() {
+        1 if s == "_" => TokenKind::Underscore,
+        2 => match s {
+            "as" => TokenKind::As,
+            _ => TokenKind::Ident,
+        },
+        3 => match s {
+            "let" => TokenKind::Let,
+            "mut" => TokenKind::Mut,
+            _ => TokenKind::Ident,
+        },
+        _ => TokenKind::Ident,
+    }
+}

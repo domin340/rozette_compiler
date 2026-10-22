@@ -1,7 +1,9 @@
 mod tokens;
 
 use std::str::Chars;
-pub use tokens::{CommentKind, Token, TokenKind};
+pub use tokens::{
+    CommentKind, Token, TokenKind, classify_ident, is_ident_continue, is_ident_start,
+};
 
 pub const EOF: char = '\0';
 
@@ -281,30 +283,6 @@ impl<'source> Lexer<'source> {
             start: start as u32,
             end: self.pos() as u32,
         }
-    }
-}
-
-fn is_ident_start(c: char) -> bool {
-    unicode_ident::is_xid_start(c) || c == '_'
-}
-
-fn is_ident_continue(c: char) -> bool {
-    unicode_ident::is_xid_continue(c) || c == '_'
-}
-
-fn classify_ident(s: &str) -> TokenKind {
-    match s.len() {
-        1 if s == "_" => TokenKind::Underscore,
-        2 => match s {
-            "as" => TokenKind::As,
-            _ => TokenKind::Ident,
-        },
-        3 => match s {
-            "let" => TokenKind::Let,
-            "mut" => TokenKind::Mut,
-            _ => TokenKind::Ident,
-        },
-        _ => TokenKind::Ident,
     }
 }
 
