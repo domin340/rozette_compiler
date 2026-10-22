@@ -42,11 +42,6 @@ impl TokenStream {
     }
 
     #[inline]
-    pub fn peek(&self) -> Token {
-        self.get(self.index + 1)
-    }
-
-    #[inline]
     pub fn nth(&self, n: usize) -> Token {
         self.get(self.index + n)
     }
