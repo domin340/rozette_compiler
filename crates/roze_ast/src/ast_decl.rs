@@ -80,8 +80,7 @@ pub struct Pat {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StmtKind {
-    Empty,
-    Let(Box<Pat>, Box<Expr>),
+    Let(Box<Pat>, Option<Box<Expr>>),
     Semi(Box<Expr>),
     Expr(Box<Expr>),
 }
