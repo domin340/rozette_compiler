@@ -294,6 +294,7 @@ fn is_ident_continue(c: char) -> bool {
 
 fn classify_ident(s: &str) -> TokenKind {
     match s.len() {
+        1 if s == "_" => TokenKind::Underscore,
         2 => match s {
             "as" => TokenKind::As,
             _ => TokenKind::Ident,

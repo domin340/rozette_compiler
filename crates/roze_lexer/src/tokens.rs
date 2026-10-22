@@ -24,6 +24,8 @@ pub enum TokenKind {
     Semi,
     /// `\n`
     NewLine,
+    /// `_`
+    Underscore,
     /// <ident>
     Ident,
     /// `let`
