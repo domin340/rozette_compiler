@@ -4,7 +4,7 @@ use roze_span::Symbol;
 use crate::{Lit, parser::Parser};
 
 impl Parser<'_> {
-    pub(super) fn parse_str_lit(&mut self, t: &Token) -> Lit {
+    pub(crate) fn parse_str_lit(&mut self, t: &Token) -> Lit {
         let s = &self.s[t];
 
         let bytes = s.as_bytes();
@@ -23,7 +23,7 @@ impl Parser<'_> {
         Lit::Str(str_sym)
     }
 
-    pub(super) fn parse_num_lit(&mut self, t: &Token) -> Lit {
+    pub(crate) fn parse_num_lit(&mut self, t: &Token) -> Lit {
         let s = &self.s[t];
         let (prefix_len, radix) = prefix_and_radix(s.as_bytes());
 

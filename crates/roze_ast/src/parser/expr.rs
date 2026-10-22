@@ -30,7 +30,7 @@ impl Prec {
 }
 
 impl Parser<'_> {
-    pub(super) fn parse_lhs_expr(&mut self) -> Expr {
+    pub(crate) fn parse_lhs_expr(&mut self) -> Expr {
         let token = self.token();
         self.advance(); // skipped in every case
 
@@ -64,7 +64,7 @@ impl Parser<'_> {
         }
     }
 
-    pub(super) fn parse_expr_in(&mut self, min_prec: Prec) -> Expr {
+    pub(crate) fn parse_expr_in(&mut self, min_prec: Prec) -> Expr {
         let start_pos = self.token().start;
         let mut lhs = self.parse_lhs_expr();
 
@@ -129,7 +129,7 @@ impl Parser<'_> {
     }
 
     #[inline]
-    pub(super) fn parse_expr(&mut self) -> Expr {
+    pub(crate) fn parse_expr(&mut self) -> Expr {
         self.parse_expr_in(Prec::Lowest)
     }
 }

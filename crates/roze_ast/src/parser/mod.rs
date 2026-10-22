@@ -11,7 +11,7 @@ use roze_span::Symbol;
 use token_stream::TokenStream;
 
 #[inline(always)]
-pub(super) fn span(t: &Token) -> Span {
+pub(crate) fn span(t: &Token) -> Span {
     Span {
         start: t.start,
         end: t.end,
@@ -36,19 +36,19 @@ impl<'source> Parser<'source> {
     }
 
     #[inline]
-    pub(super) fn is(&mut self, expected: TokenKind) -> bool {
+    pub(crate) fn is(&mut self, expected: TokenKind) -> bool {
         self.token().kind == expected
     }
 
     /// Internalizes the data in the range of Token's span.
     /// See [`Symbol::intern`].
     #[inline]
-    pub(super) fn intern(&self, token: &Token) -> Symbol {
+    pub(crate) fn intern(&self, token: &Token) -> Symbol {
         let s = &self.s[token];
         Symbol::intern(s)
     }
 
-    pub(super) fn expect(&mut self, expected: TokenKind) -> bool {
+    pub(crate) fn expect(&mut self, expected: TokenKind) -> bool {
         let token = self.token();
         let matches_token = token.kind == expected;
 
@@ -60,22 +60,22 @@ impl<'source> Parser<'source> {
     }
 
     #[inline]
-    pub(super) fn span(&self) -> Span {
+    pub(crate) fn span(&self) -> Span {
         span(&self.token())
     }
 
     #[inline]
-    pub(super) fn record_span(&self, start: u32) -> Span {
+    pub(crate) fn record_span(&self, start: u32) -> Span {
         Span::new(start, self.prev.end)
     }
 
     #[inline]
-    pub(super) fn token(&self) -> Token {
+    pub(crate) fn token(&self) -> Token {
         self.stream.cur()
     }
 
     #[inline]
-    pub(super) fn advance(&mut self) {
+    pub(crate) fn advance(&mut self) {
         self.prev = self.stream.advance();
     }
 }
