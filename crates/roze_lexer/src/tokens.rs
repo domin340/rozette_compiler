@@ -132,6 +132,14 @@ pub fn classify_ident(s: &str) -> TokenKind {
             "mut" => TokenKind::Mut,
             _ => TokenKind::Ident,
         },
+        4 => match s {
+            "true" => TokenKind::True,
+            _ => TokenKind::Ident,
+        },
+        5 => match s {
+            "false" => TokenKind::False,
+            _ => TokenKind::Ident,
+        },
         _ => TokenKind::Ident,
     }
 }
