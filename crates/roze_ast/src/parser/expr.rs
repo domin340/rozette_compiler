@@ -133,3 +133,66 @@ impl Parser<'_> {
         self.parse_expr_in(Prec::Lowest)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use roze_span::{Span, Symbol};
+
+    use crate::{Expr, ExprKind, Lit, Parser};
+
+    #[test]
+    fn parse_literals_and_ident() {
+        let hello = Symbol::intern("hello");
+        let decimal = Symbol::intern("12.3e+2");
+        let hex = Symbol::intern("0x3faFA");
+        let identifier = Symbol::intern("identifier");
+
+        let mut parser = Parser::new(r#""hello" 12.3e+2 0x3faFA true false identifier"#);
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Lit(Lit::Str(hello)),
+                span: Span::new(0, 7),
+            },
+            parser.parse_expr()
+        );
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Lit(Lit::Num(decimal)),
+                span: Span::new(8, 15),
+            },
+            parser.parse_expr()
+        );
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Lit(Lit::Num(hex)),
+                span: Span::new(16, 23),
+            },
+            parser.parse_expr()
+        );
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Lit(Lit::Bool(true)),
+                span: Span::new(24, 28),
+            },
+            parser.parse_expr()
+        );
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Lit(Lit::Bool(false)),
+                span: Span::new(29, 34),
+            },
+            parser.parse_expr()
+        );
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Ident(identifier),
+                span: Span::new(35, 45),
+            },
+            parser.parse_expr()
+        );
+    }
+
+    #[test]
+    fn parse_binary_expressions() {}
+}
