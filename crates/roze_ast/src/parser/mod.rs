@@ -7,6 +7,7 @@ mod token_stream;
 
 use crate::{Span, parser::source_struct::Source};
 use roze_lexer::{Token, TokenKind};
+use roze_span::Symbol;
 use token_stream::TokenStream;
 
 #[inline(always)]
@@ -37,6 +38,14 @@ impl<'source> Parser<'source> {
     #[inline]
     pub(super) fn is(&mut self, expected: TokenKind) -> bool {
         self.token().kind == expected
+    }
+
+    /// Internalizes the data in the range of Token's span.
+    /// See [`Symbol::intern`].
+    #[inline]
+    pub(super) fn intern(&self, token: &Token) -> Symbol {
+        let s = &self.s[token];
+        Symbol::intern(s)
     }
 
     pub(super) fn expect(&mut self, expected: TokenKind) -> bool {
