@@ -1,10 +1,12 @@
 mod expr;
 mod lit;
+mod pat;
 mod source_struct;
+mod stmt;
 mod token_stream;
 
 use crate::{Span, parser::source_struct::Source};
-use roze_lexer::Token;
+use roze_lexer::{Token, TokenKind};
 use token_stream::TokenStream;
 
 #[inline(always)]
@@ -33,6 +35,22 @@ impl<'source> Parser<'source> {
     }
 
     #[inline]
+    pub(super) fn is(&mut self, expected: TokenKind) -> bool {
+        self.token().kind == expected
+    }
+
+    pub(super) fn expect(&mut self, expected: TokenKind) -> bool {
+        let token = self.token();
+        let matches_token = token.kind == expected;
+
+        if !matches_token {
+            panic!("expected {expected}, got {token}");
+        }
+
+        matches_token
+    }
+
+    #[inline]
     pub(super) fn span(&self) -> Span {
         span(&self.token())
     }
@@ -50,10 +68,5 @@ impl<'source> Parser<'source> {
     #[inline]
     pub(super) fn advance(&mut self) {
         self.prev = self.stream.advance();
-    }
-
-    #[inline]
-    pub(super) fn peek_token(&self) -> Token {
-        self.stream.peek()
     }
 }
