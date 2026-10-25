@@ -46,7 +46,7 @@ impl Parser<'_> {
 mod tests {
     use roze_span::{Span, Symbol};
 
-    use crate::{Expr, ExprKind, Lit, Parser, Stmt, StmtKind};
+    use crate::{Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind};
 
     #[test]
     fn semi_and_semiless_expr() {
@@ -77,8 +77,45 @@ mod tests {
     }
 
     #[test]
-    fn let_stmt_wildcard() {}
+    fn let_stmt_wildcard() {
+        let ten_sym = Symbol::intern("10");
+        let mut parser = Parser::new("let _ = 10;");
+
+        assert_eq!(
+            Stmt {
+                kind: StmtKind::Let(
+                    Box::new(Pat {
+                        kind: PatKind::Discard,
+                        span: Span::new(4, 5),
+                    }),
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(ten_sym)),
+                        span: Span::new(8, 10),
+                    }))
+                ),
+                span: Span::new(0, 11)
+            },
+            parser.parse_stmt()
+        );
+    }
 
     #[test]
-    fn let_stmt_ident() {}
+    fn let_stmt_empty_value() {
+        let a_sym = Symbol::intern("a");
+        let mut parser = Parser::new("let a;");
+
+        assert_eq!(
+            Stmt {
+                kind: StmtKind::Let(
+                    Box::new(Pat {
+                        kind: PatKind::Ident(a_sym),
+                        span: Span::new(4, 5),
+                    }),
+                    None
+                ),
+                span: Span::new(0, 6)
+            },
+            parser.parse_stmt()
+        );
+    }
 }
