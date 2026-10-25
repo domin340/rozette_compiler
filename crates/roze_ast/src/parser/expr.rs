@@ -20,6 +20,7 @@ impl Prec {
     pub fn token(token: TokenKind) -> Option<Self> {
         Some(match token {
             Asterisk | Slash | Percent => Self::Product,
+            Plus | Minus => Self::Sum,
             Lt | Gt | LtEq | GtEq => Self::Comp,
             EqEq | NotEq => Self::Eq,
             Eq | AsteriskEq | SlashEq | PercentEq | PlusEq | MinusEq => Self::Assignment,
@@ -70,7 +71,7 @@ impl Parser<'_> {
 
         while let token = self.token()
             && let Some(this_prec) = Prec::token(token.kind)
-            && this_prec > min_prec
+            && this_prec <= min_prec
         {
             self.advance(); // skipping the operator
 
@@ -138,7 +139,10 @@ impl Parser<'_> {
 mod tests {
     use roze_span::{Span, Symbol};
 
-    use crate::{Expr, ExprKind, Lit, Parser};
+    use crate::{
+        Expr, ExprKind, Lit, Parser,
+        humanize_ast::{HumanizeAst, HumanizeOptions, NewlineKind},
+    };
 
     #[test]
     fn parse_literals_and_ident() {
@@ -194,5 +198,33 @@ mod tests {
     }
 
     #[test]
-    fn parse_binary_expressions() {}
+    fn parse_binary_expressions() {
+        let mut parser = Parser::new("10 + -10 * 2 + 2");
+
+        assert_eq!(
+            r#"
+Binary {
+ 10
+ `+`
+ Binary {
+  Binary {
+   Unary {
+    `-`
+    10
+   }
+   `*`
+   2
+  }
+  `+`
+  2
+ }
+}
+"#
+            .trim(),
+            parser.parse_expr().to_human_string(HumanizeOptions {
+                spacing: 1,
+                newline: NewlineKind::Lf,
+            }),
+        )
+    }
 }
