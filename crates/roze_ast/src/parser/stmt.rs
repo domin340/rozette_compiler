@@ -27,6 +27,7 @@ impl Parser<'_> {
             _ => {
                 let expr = self.parse_expr().into();
                 if self.is(Semi) {
+                    self.advance();
                     StmtKind::Semi(expr)
                 } else {
                     StmtKind::Expr(expr)
@@ -39,4 +40,45 @@ impl Parser<'_> {
             span: self.record_span(token.start),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use roze_span::{Span, Symbol};
+
+    use crate::{Expr, ExprKind, Lit, Parser, Stmt, StmtKind};
+
+    #[test]
+    fn semi_and_semiless_expr() {
+        let ten_sym = Symbol::intern("10");
+        let mut parser = Parser::new("10; 10");
+
+        assert_eq!(
+            Stmt {
+                kind: StmtKind::Semi(Box::new(Expr {
+                    kind: ExprKind::Lit(Lit::Num(ten_sym)),
+                    span: Span::new(0, 2),
+                })),
+                span: Span::new(0, 3),
+            },
+            parser.parse_stmt(),
+        );
+
+        assert_eq!(
+            Stmt {
+                kind: StmtKind::Expr(Box::new(Expr {
+                    kind: ExprKind::Lit(Lit::Num(ten_sym)),
+                    span: Span::new(4, 6),
+                })),
+                span: Span::new(4, 6),
+            },
+            parser.parse_stmt(),
+        );
+    }
+
+    #[test]
+    fn let_stmt_wildcard() {}
+
+    #[test]
+    fn let_stmt_ident() {}
 }
