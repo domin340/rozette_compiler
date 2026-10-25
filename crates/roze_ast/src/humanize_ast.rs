@@ -1,5 +1,4 @@
 use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp};
-use roze_span::Symbol;
 use std::fmt::{self, Write};
 
 pub trait HumanizeAst
@@ -124,9 +123,9 @@ impl HumanizeAst for Expr {
         match &self.kind {
             ExprKind::Lit(lit) => match lit {
                 Lit::Bool(b) => f.write_str(if *b { "true" } else { "false" }),
-                Lit::Str(sym) | Lit::Num(sym) => f.write_str(Symbol::as_str(sym)),
+                Lit::Str(sym) | Lit::Num(sym) => f.write_str(sym.as_str()),
             },
-            ExprKind::Ident(sym) => f.write_str(Symbol::as_str(sym)),
+            ExprKind::Ident(sym) => f.write_str(sym.as_str()),
             ExprKind::Unary(op, expr) => ctx.block(f, "Unary", |ctx, f| {
                 write_unary_op(f, *op)?;
                 ctx.new_line(f)?;
