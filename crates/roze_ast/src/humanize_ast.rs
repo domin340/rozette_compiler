@@ -35,6 +35,7 @@ pub struct HumanizeCtx {
     /// See [`HumanizeOptions::spacing`].
     /// Defines how many spaces will be added every new scope.
     pub spacing: usize,
+    pub newline: &'static str,
 }
 
 impl HumanizeCtx {
@@ -47,7 +48,7 @@ impl HumanizeCtx {
     }
 
     fn new_line(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write_new_line(f)?;
+        f.write_str(self.newline)?;
         write_spaces(f, self.spaces)
     }
 
@@ -74,8 +75,17 @@ impl HumanizeCtx {
     }
 }
 
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NewlineKind {
+    Crlf,
+    Lf,
+    #[default]
+    System,
+}
+
 pub struct HumanizeOptions {
     pub spacing: usize,
+    pub newline: NewlineKind,
 }
 
 impl From<HumanizeOptions> for HumanizeCtx {
@@ -86,9 +96,23 @@ impl From<HumanizeOptions> for HumanizeCtx {
             STATIC_SPACES.len(),
         );
 
+        const UNIX: &str = "\n";
+        const WINDOWS: &str = "\r\n";
+
+        #[cfg(windows)]
+        const SYSTEM: &str = WINDOWS;
+
+        #[cfg(not(windows))]
+        const SYSTEM: &str = UNIX;
+
         Self {
             spaces: 0,
             spacing: value.spacing,
+            newline: match value.newline {
+                NewlineKind::System => SYSTEM,
+                NewlineKind::Lf => UNIX,
+                NewlineKind::Crlf => WINDOWS,
+            },
         }
     }
 }
