@@ -56,6 +56,7 @@ impl<'source> Parser<'source> {
             panic!("expected {expected}, got {token}");
         }
 
+        self.advance(); // advance over the expected token
         matches_token
     }
 
