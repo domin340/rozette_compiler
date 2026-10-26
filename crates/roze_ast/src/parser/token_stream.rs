@@ -1,4 +1,23 @@
-use roze_lexer::{Token, TokenKind, lex};
+use roze_lexer::{Lexer, Token, TokenKind};
+
+fn lex_ignore_comments_and_nl(s: &str) -> Vec<Token> {
+    let mut lexer = Lexer::new(s);
+    let mut tokens = Vec::<Token>::new();
+
+    loop {
+        let token = lexer.next_token();
+        match token.kind {
+            TokenKind::Comment(_) | TokenKind::NewLine => continue,
+            TokenKind::Eof => {
+                tokens.push(token);
+                break;
+            }
+            _ => tokens.push(token),
+        }
+    }
+
+    tokens
+}
 
 pub struct TokenStream {
     tokens: Vec<Token>,
@@ -7,8 +26,7 @@ pub struct TokenStream {
 
 impl TokenStream {
     pub fn new(s: &str) -> Self {
-        let tokens = lex(s);
-        debug_assert_eq!(tokens.last().unwrap().kind, TokenKind::Eof);
+        let tokens = lex_ignore_comments_and_nl(s);
         Self { tokens, index: 0 }
     }
 

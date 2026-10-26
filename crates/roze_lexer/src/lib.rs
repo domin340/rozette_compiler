@@ -298,26 +298,6 @@ pub fn iter(s: &str) -> impl Iterator<Item = Token> {
     })
 }
 
-pub fn lex(s: &str) -> Vec<Token> {
-    let mut lexer = Lexer::new(s);
-    let mut v = vec![];
-
-    let mut prev_kind;
-
-    loop {
-        let token = lexer.next_token();
-        prev_kind = token.kind;
-
-        v.push(token);
-
-        if prev_kind == TokenKind::Eof {
-            break;
-        }
-    }
-
-    v
-}
-
 #[cfg(test)]
 mod tests {
     fn lex(s: &str) -> Vec<String> {
