@@ -65,9 +65,12 @@ pub struct Expr {
     pub span: Span,
 }
 
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Mutability(pub bool);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatKind {
-    Ident(Symbol),
+    Ident(Mutability, Symbol),
     /// `_`
     Discard,
 }

@@ -46,7 +46,7 @@ impl Parser<'_> {
 mod tests {
     use roze_span::{Span, Symbol};
 
-    use crate::{Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind};
+    use crate::{Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind, ast_decl::Mutability};
 
     #[test]
     fn semi_and_semiless_expr() {
@@ -100,20 +100,20 @@ mod tests {
     }
 
     #[test]
-    fn let_stmt_empty_value() {
+    fn let_stmt_mut_empty() {
         let a_sym = Symbol::intern("a");
-        let mut parser = Parser::new("let a;");
+        let mut parser = Parser::new("let mut a;");
 
         assert_eq!(
             Stmt {
                 kind: StmtKind::Let(
                     Box::new(Pat {
-                        kind: PatKind::Ident(a_sym),
-                        span: Span::new(4, 5),
+                        kind: PatKind::Ident(Mutability(true), a_sym),
+                        span: Span::new(4, 9),
                     }),
                     None
                 ),
-                span: Span::new(0, 6)
+                span: Span::new(0, 10)
             },
             parser.parse_stmt()
         );

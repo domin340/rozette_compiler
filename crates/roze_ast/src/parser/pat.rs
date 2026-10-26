@@ -1,4 +1,4 @@
-use crate::{Pat, PatKind, parser::Parser};
+use crate::{Pat, PatKind, ast_decl::Mutability, parser::Parser};
 use TokenKind::*;
 use roze_lexer::TokenKind;
 
@@ -8,10 +8,11 @@ impl Parser<'_> {
         self.advance();
 
         let pat_kind = match token.kind {
-            Ident => {
-                let sym = self.intern(&token);
-                PatKind::Ident(sym)
+            Mut => {
+                self.expect(Ident);
+                PatKind::Ident(Mutability(true), self.intern(&self.prev))
             }
+            Ident => PatKind::Ident(Mutability(false), self.intern(&token)),
             Underscore => PatKind::Discard,
             _ => panic!("Unexpected token: {token} while parsing pattern"),
         };
