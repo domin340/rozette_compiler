@@ -1,4 +1,4 @@
-use crate::{Expr, Stmt, StmtKind, parser::Parser};
+use crate::{Expr, Stmt, StmtKind, ast_decl::Local, parser::Parser};
 use TokenKind::*;
 use roze_lexer::TokenKind;
 
@@ -22,7 +22,10 @@ impl Parser<'_> {
 
                 self.expect(Semi);
 
-                StmtKind::Let(pat.into(), rhs_expr)
+                StmtKind::Let(Box::new(Local {
+                    pat: pat.into(),
+                    val: rhs_expr,
+                }))
             }
             _ => {
                 let expr = self.parse_expr().into();
@@ -46,7 +49,10 @@ impl Parser<'_> {
 mod tests {
     use roze_span::{Span, Symbol};
 
-    use crate::{Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind, ast_decl::Mutability};
+    use crate::{
+        Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
+        ast_decl::{Local, Mutability},
+    };
 
     #[test]
     fn semi_and_semiless_expr() {
@@ -83,16 +89,16 @@ mod tests {
 
         assert_eq!(
             Stmt {
-                kind: StmtKind::Let(
-                    Box::new(Pat {
+                kind: StmtKind::Let(Box::new(Local {
+                    pat: Box::new(Pat {
                         kind: PatKind::Discard,
                         span: Span::new(4, 5),
                     }),
-                    Some(Box::new(Expr {
+                    val: Some(Box::new(Expr {
                         kind: ExprKind::Lit(Lit::Num(ten_sym)),
                         span: Span::new(8, 10),
                     }))
-                ),
+                })),
                 span: Span::new(0, 11)
             },
             parser.parse_stmt()
@@ -106,13 +112,13 @@ mod tests {
 
         assert_eq!(
             Stmt {
-                kind: StmtKind::Let(
-                    Box::new(Pat {
+                kind: StmtKind::Let(Box::new(Local {
+                    pat: Box::new(Pat {
                         kind: PatKind::Ident(Mutability(true), a_sym),
                         span: Span::new(4, 9),
                     }),
-                    None
-                ),
+                    val: None,
+                })),
                 span: Span::new(0, 10)
             },
             parser.parse_stmt()
