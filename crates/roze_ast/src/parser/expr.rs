@@ -139,10 +139,7 @@ impl Parser<'_> {
 mod tests {
     use roze_span::{Span, Symbol};
 
-    use crate::{
-        Expr, ExprKind, Lit, Parser,
-        humanize_ast::{HumanizeAst, HumanizeOptions, NewlineKind},
-    };
+    use crate::{BinOp, Expr, ExprKind, Lit, Parser, UnaryOp};
 
     #[test]
     fn parse_literals_and_ident() {
@@ -201,30 +198,55 @@ mod tests {
     fn parse_binary_expressions() {
         let mut parser = Parser::new("10 + -10 * 2 + 2");
 
+        let ten = Lit::Num(Symbol::intern("10"));
+        let two = Lit::Num(Symbol::intern("2"));
+
+        let mul_two = Expr {
+            kind: ExprKind::Binary(
+                Box::new(Expr {
+                    kind: ExprKind::Unary(
+                        UnaryOp::Minus,
+                        Box::new(Expr {
+                            kind: ExprKind::Lit(ten.clone()),
+                            span: Span::new(6, 8),
+                        }),
+                    ),
+                    span: Span::new(5, 8),
+                }),
+                BinOp::Mul,
+                Box::new(Expr {
+                    kind: ExprKind::Lit(two.clone()),
+                    span: Span::new(11, 12),
+                }),
+            ),
+            span: Span::new(5, 12),
+        };
+
+        let add_two = Expr {
+            kind: ExprKind::Binary(
+                Box::new(mul_two),
+                BinOp::Add,
+                Box::new(Expr {
+                    kind: ExprKind::Lit(two),
+                    span: Span::new(15, 16),
+                }),
+            ),
+            span: Span::new(5, 16),
+        };
+
         assert_eq!(
-            r#"
-Binary {
- 10
- `+`
- Binary {
-  Binary {
-   Unary {
-    `-`
-    10
-   }
-   `*`
-   2
-  }
-  `+`
-  2
- }
-}
-"#
-            .trim(),
-            parser.parse_expr().to_human_string(HumanizeOptions {
-                spacing: 1,
-                newline: NewlineKind::Lf,
-            }),
-        )
+            Expr {
+                kind: ExprKind::Binary(
+                    Box::new(Expr {
+                        kind: ExprKind::Lit(ten),
+                        span: Span::new(0, 2),
+                    }),
+                    BinOp::Add,
+                    Box::new(add_two)
+                ),
+                span: Span::new(0, 16),
+            },
+            parser.parse_expr()
+        );
     }
 }
