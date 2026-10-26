@@ -50,8 +50,6 @@ pub enum ExprKind {
     /// Unary operation (`!logical`)
     Unary(UnaryOp, Box<Expr>),
     /// Compound binary operation (`a += 2`).
-    /// For simplicity the compound uses [`BinaryOp`],
-    /// although the compound does not support logical operators.
     Compound(Box<Expr>, CompoundOp, Box<Expr>),
     /// Assignment (`a = 2`)
     Assign(Box<Expr>, Box<Expr>),
