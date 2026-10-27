@@ -203,6 +203,7 @@ impl<'source> Lexer<'source> {
         let kind = match self.bump() {
             EOF => TokenKind::Eof,
             ';' => TokenKind::Semi,
+            ',' => TokenKind::Comma,
             c @ ('\r' | '\n') => {
                 if c == '\r' && self.first() == '\n' {
                     // skip windows new line style

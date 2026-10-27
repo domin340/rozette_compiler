@@ -22,6 +22,8 @@ pub enum TokenKind {
     Invalid,
     /// `;`
     Semi,
+    /// `,`
+    Comma,
     /// `\n`
     NewLine,
     /// `_`
