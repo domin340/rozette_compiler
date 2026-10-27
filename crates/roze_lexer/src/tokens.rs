@@ -34,6 +34,8 @@ pub enum TokenKind {
     Mut,
     /// `as`
     As,
+    /// `fn`
+    Fn,
     /// <num>
     Num,
     /// <str>
@@ -133,6 +135,7 @@ pub fn classify_ident(s: &str) -> TokenKind {
         1 if s == "_" => TokenKind::Underscore,
         2 => match s {
             "as" => TokenKind::As,
+            "fn" => TokenKind::Fn,
             _ => TokenKind::Ident,
         },
         3 => match s {
