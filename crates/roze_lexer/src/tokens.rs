@@ -84,6 +84,10 @@ pub enum TokenKind {
     PipePipe,
     /// `&&`
     AmperAmper,
+    /// `(`
+    LParen,
+    /// `)`
+    RParen,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

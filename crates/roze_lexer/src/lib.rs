@@ -211,6 +211,8 @@ impl<'source> Lexer<'source> {
 
                 TokenKind::NewLine
             }
+            '(' => TokenKind::LParen,
+            ')' => TokenKind::RParen,
             '=' if self.first() == '=' => {
                 self.bump();
                 TokenKind::EqEq
