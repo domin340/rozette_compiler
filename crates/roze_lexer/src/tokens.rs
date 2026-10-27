@@ -88,6 +88,10 @@ pub enum TokenKind {
     LParen,
     /// `)`
     RParen,
+    /// `:`
+    Colon,
+    /// `->`
+    Arrow,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

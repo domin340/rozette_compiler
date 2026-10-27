@@ -213,6 +213,7 @@ impl<'source> Lexer<'source> {
             }
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
+            ':' => TokenKind::Colon,
             '=' if self.first() == '=' => {
                 self.bump();
                 TokenKind::EqEq
@@ -252,11 +253,17 @@ impl<'source> Lexer<'source> {
                 TokenKind::PlusEq
             }
             '+' => TokenKind::Plus,
-            '-' if self.first() == '=' => {
-                self.bump();
-                TokenKind::MinusEq
-            }
-            '-' => TokenKind::Minus,
+            '-' => match self.first() {
+                '=' => {
+                    self.bump();
+                    TokenKind::MinusEq
+                }
+                '>' => {
+                    self.bump();
+                    TokenKind::Arrow
+                }
+                _ => TokenKind::Minus,
+            },
             '%' if self.first() == '=' => {
                 self.bump();
                 TokenKind::PercentEq
