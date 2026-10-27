@@ -1,4 +1,4 @@
-use crate::{Expr, Stmt, StmtKind, ast_decl::Local, parser::Parser};
+use crate::{Pat, Stmt, StmtKind, ast_decl::Local, parser::Parser};
 use TokenKind::*;
 use roze_lexer::TokenKind;
 
@@ -9,23 +9,23 @@ impl Parser<'_> {
         let stmt_kind = match token.kind {
             Let => {
                 self.advance();
-                let pat = self.parse_pat();
+                let pat: Box<Pat> = self.parse_pat().into();
 
-                // ty_pat here when added
+                let ty = if self.check(Colon) {
+                    Some(Box::new(self.parse_ty_pat()))
+                } else {
+                    None
+                };
 
-                let rhs_expr: Option<Box<Expr>> = if self.is(Eq) {
-                    self.advance();
-                    Some(self.parse_expr().into())
+                let val = if self.check(Eq) {
+                    Some(Box::new(self.parse_expr()))
                 } else {
                     None
                 };
 
                 self.expect(Semi);
 
-                StmtKind::Let(Box::new(Local {
-                    pat: pat.into(),
-                    val: rhs_expr,
-                }))
+                StmtKind::Let(Box::new(Local { pat, val, ty }))
             }
             _ => {
                 let expr = self.parse_expr().into();
@@ -97,7 +97,8 @@ mod tests {
                     val: Some(Box::new(Expr {
                         kind: ExprKind::Lit(Lit::Num(ten_sym)),
                         span: Span::new(8, 10),
-                    }))
+                    })),
+                    ty: None,
                 })),
                 span: Span::new(0, 11)
             },
@@ -118,6 +119,7 @@ mod tests {
                         span: Span::new(4, 9),
                     }),
                     val: None,
+                    ty: None,
                 })),
                 span: Span::new(0, 10)
             },
