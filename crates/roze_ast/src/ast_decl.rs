@@ -91,6 +91,7 @@ pub enum StmtKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Local {
     pub pat: Box<Pat>,
+    pub ty: Option<Box<TyPat>>,
     pub val: Option<Box<Expr>>,
 }
 
@@ -124,7 +125,7 @@ pub struct Fn {
     pub name: Symbol,
     pub params: ThinVec<Param>,
     pub block: Block,
-    pub ret_ty: Option<TyPat>,
+    pub ret_ty: Option<Box<TyPat>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
