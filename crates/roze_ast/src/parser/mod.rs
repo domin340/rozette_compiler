@@ -1,15 +1,16 @@
 mod expr;
 mod lit;
 mod pat;
-mod source_struct;
 mod stmt;
-mod token_stream;
+mod stream_source;
 
-use crate::{Span, parser::source_struct::Source};
+use crate::{
+    Span,
+    parser::stream_source::{Source, TokenStream},
+};
 use roze_lexer::{Token, TokenKind};
 use roze_span::Symbol;
 use thin_vec::ThinVec;
-use token_stream::TokenStream;
 
 #[inline(always)]
 pub(crate) fn span(t: &Token) -> Span {
