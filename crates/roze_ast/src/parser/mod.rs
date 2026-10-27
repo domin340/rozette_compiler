@@ -40,6 +40,19 @@ impl<'source> Parser<'source> {
         self.token().kind == expected
     }
 
+    /// Returns whether the [`TokenKind`] of the current token in the [`TokenStream`] is matching with expected.
+    /// If values match, the token is also advanced.
+    #[inline]
+    pub(crate) fn check(&mut self, expected: TokenKind) -> bool {
+        let is = self.token().kind == expected;
+
+        if is {
+            self.advance();
+        }
+
+        is
+    }
+
     /// Internalizes the data in the range of Token's span.
     /// See [`Symbol::intern`].
     #[inline]
