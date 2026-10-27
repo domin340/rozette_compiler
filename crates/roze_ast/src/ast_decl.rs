@@ -106,12 +106,12 @@ pub struct Item {
     pub span: Span,
 }
 
-/// Visibility
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Vis {
-    File,
-    Pub,
-}
+// /// Visibility
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub enum Vis {
+//     File,
+//     Pub,
+// }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Block {
@@ -120,10 +120,20 @@ pub struct Block {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Params {
+    pub items: ThinVec<Param>,
+    /// Whether the params tuple has trailing comma or not.
+    /// e.g.: (`x: number, y: number,`)
+    pub trailing: bool,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fn {
-    pub vis: Vis,
+    // pub vis: Vis,
     pub name: Symbol,
-    pub params: ThinVec<Param>,
+    pub name_span: Span,
+    pub params: Box<Params>,
     pub block: Block,
     pub ret_ty: Option<Box<TyPat>>,
 }
@@ -131,7 +141,7 @@ pub struct Fn {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Param {
     pub pat: Box<Pat>,
-    pub ty_pat: Box<TyPat>,
+    pub ty: Option<Box<TyPat>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
