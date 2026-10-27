@@ -92,6 +92,10 @@ pub enum TokenKind {
     LParen,
     /// `)`
     RParen,
+    /// `{{`
+    LCurly,
+    /// `}}`
+    RCurly,
     /// `:`
     Colon,
     /// `->`
