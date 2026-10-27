@@ -8,6 +8,7 @@ mod token_stream;
 use crate::{Span, parser::source_struct::Source};
 use roze_lexer::{Token, TokenKind};
 use roze_span::Symbol;
+use thin_vec::ThinVec;
 use token_stream::TokenStream;
 
 #[inline(always)]
@@ -91,5 +92,30 @@ impl<'source> Parser<'source> {
     #[inline]
     pub(crate) fn advance(&mut self) {
         self.prev = self.stream.advance();
+    }
+
+    pub(crate) fn parse_surrounded<T>(
+        &mut self,
+        open_token: TokenKind,
+        sep_token: TokenKind,
+        close_token: TokenKind,
+        mut f: impl FnMut(&mut Self) -> T,
+    ) -> (ThinVec<T>, bool) {
+        let mut v = ThinVec::new();
+
+        self.expect(open_token);
+        let mut trailing_comma = false;
+
+        while !self.check(close_token) {
+            v.push(f(self)); // parse and push the element to the thin_vec
+            trailing_comma = self.check(sep_token);
+
+            if !trailing_comma {
+                self.expect(close_token);
+                break;
+            }
+        }
+
+        (v, trailing_comma)
     }
 }
