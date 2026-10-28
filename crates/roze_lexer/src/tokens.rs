@@ -30,6 +30,8 @@ pub enum TokenKind {
     Underscore,
     /// <ident>
     Ident,
+    /// `return`
+    Return,
     /// `let`
     Let,
     /// `mut`
@@ -96,6 +98,10 @@ pub enum TokenKind {
     LCurly,
     /// `}}`
     RCurly,
+    /// `[`
+    LBracket,
+    /// `]`
+    RBracket,
     /// `:`
     Colon,
     /// `->`
@@ -155,6 +161,10 @@ pub fn classify_ident(s: &str) -> TokenKind {
         },
         5 => match s {
             "false" => TokenKind::False,
+            _ => TokenKind::Ident,
+        },
+        6 => match s {
+            "return" => TokenKind::Return,
             _ => TokenKind::Ident,
         },
         _ => TokenKind::Ident,

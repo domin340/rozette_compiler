@@ -212,6 +212,8 @@ impl<'source> Lexer<'source> {
 
                 TokenKind::NewLine
             }
+            '[' => TokenKind::LBracket,
+            ']' => TokenKind::RBracket,
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
             '{' => TokenKind::LCurly,
