@@ -82,7 +82,7 @@ pub enum TyPatKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StmtKind {
-    Item(Box<Item>),
+    Fn(Box<Fn>),
     Let(Box<Local>),
     Semi(Box<Expr>),
     Expr(Box<Expr>),

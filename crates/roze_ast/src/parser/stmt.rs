@@ -50,18 +50,15 @@ impl Parser<'_> {
                 // { <stmt>* }
                 let block = self.parse_stmt_block();
 
-                let fn_struct = ItemKind::Fn(Box::new(Fn {
+                let fn_struct = Fn {
                     name: self.intern(&name_token),
                     name_span: span(&name_token),
                     params: params.into(),
                     ret_ty,
                     block,
-                }));
+                };
 
-                StmtKind::Item(Box::new(Item {
-                    kind: fn_struct,
-                    span: self.record_span(token.start),
-                }))
+                StmtKind::Fn(fn_struct.into())
             }
             _ => {
                 let expr = self.parse_expr().into();
@@ -250,22 +247,19 @@ mod tests {
 
         assert_eq!(
             Stmt {
-                kind: StmtKind::Item(Box::new(Item {
-                    kind: ItemKind::Fn(Box::new(Fn {
-                        name: name_sym,
-                        name_span: Span::new(3, 7),
-                        params: Box::new(Params {
-                            items: thin_vec![],
-                            trailing: false,
-                            span: Span::new(7, 9),
-                        }),
-                        block,
-                        ret_ty: Some(Box::new(TyPat {
-                            kind: TyPatKind::Unit,
-                            span: Span::new(13, 15),
-                        }))
-                    })),
-                    span: Span::new(0, 36),
+                kind: StmtKind::Fn(Box::new(Fn {
+                    name: name_sym,
+                    name_span: Span::new(3, 7),
+                    params: Box::new(Params {
+                        items: thin_vec![],
+                        trailing: false,
+                        span: Span::new(7, 9),
+                    }),
+                    block,
+                    ret_ty: Some(Box::new(TyPat {
+                        kind: TyPatKind::Unit,
+                        span: Span::new(13, 15),
+                    }))
                 })),
                 span: Span::new(0, 36),
             },
