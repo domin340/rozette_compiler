@@ -5,6 +5,8 @@ use roze_span::Symbol;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Prec {
+    /// Call, tuple, index
+    Grouping,
     Unary,
     Product,
     Sum,
@@ -25,6 +27,7 @@ impl Prec {
             EqEq | NotEq => Self::Eq,
             Eq | AsteriskEq | SlashEq | PercentEq | PlusEq | MinusEq => Self::Assignment,
             AmperAmper | PipePipe => Self::Logical,
+            LParen => Self::Grouping,
             _ => return None,
         })
     }
@@ -115,6 +118,13 @@ impl Parser<'_> {
                         span: self.record_span(start_pos),
                     };
                 }
+                LParen => {
+                    let (args, _) = self.parse_until_terminated(Comma, RParen, Self::parse_expr);
+                    lhs = Expr {
+                        kind: ExprKind::Call(lhs.into(), args),
+                        span: self.record_span(start_pos),
+                    };
+                }
                 Eq => {
                     let rhs = self.parse_expr_in(this_prec);
                     lhs = Expr {
@@ -129,7 +139,6 @@ impl Parser<'_> {
         lhs
     }
 
-    #[inline]
     pub(crate) fn parse_expr(&mut self) -> Expr {
         self.parse_expr_in(Prec::Lowest)
     }
@@ -138,8 +147,9 @@ impl Parser<'_> {
 #[cfg(test)]
 mod tests {
     use roze_span::{Span, Symbol};
+    use thin_vec::thin_vec;
 
-    use crate::{BinOp, Expr, ExprKind, Lit, Parser, UnaryOp};
+    use crate::{BinOp, Expr, ExprKind, Lit, Parser, UnaryOp, intern_all};
 
     #[test]
     fn parse_literals_and_ident() {
@@ -191,6 +201,45 @@ mod tests {
                 span: Span::new(35, 45),
             },
             parser.parse_expr()
+        );
+    }
+
+    #[test]
+    fn parse_call_expr() {
+        let (two_sym, x_sym) = intern_all!("2", "x");
+        let mut parser = Parser::new("!x(2,) + 2");
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Binary(
+                    Box::new(Expr {
+                        kind: ExprKind::Unary(
+                            UnaryOp::BitNot,
+                            Box::new(Expr {
+                                kind: ExprKind::Call(
+                                    Box::new(Expr {
+                                        kind: ExprKind::Ident(x_sym),
+                                        span: Span::new(1, 2),
+                                    }),
+                                    thin_vec![Expr {
+                                        kind: ExprKind::Lit(Lit::Num(two_sym)),
+                                        span: Span::new(3, 4),
+                                    }],
+                                ),
+                                span: Span::new(1, 6),
+                            })
+                        ),
+                        span: Span::new(0, 6),
+                    }),
+                    BinOp::Add,
+                    Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(two_sym)),
+                        span: Span::new(9, 10),
+                    }),
+                ),
+                span: Span::new(0, 10),
+            },
+            parser.parse_expr(),
         );
     }
 
