@@ -1,6 +1,6 @@
 use crate::{
     Pat, Stmt, StmtKind,
-    ast_decl::{Block, Fn, Item, ItemKind, Local, Param, Params},
+    ast_decl::{Block, Fn, Local, Param, Params},
     parser::{Parser, span},
 };
 use TokenKind::*;
@@ -129,7 +129,7 @@ mod tests {
 
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
-        ast_decl::{Block, Fn, Item, ItemKind, Local, Mutability, Params, TyPat, TyPatKind},
+        ast_decl::{Block, Fn, Local, Mutability, Params, TyPat, TyPatKind},
         intern_all,
     };
 

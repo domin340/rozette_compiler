@@ -95,17 +95,6 @@ pub struct Local {
     pub val: Option<Box<Expr>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ItemKind {
-    Fn(Box<Fn>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item {
-    pub kind: ItemKind,
-    pub span: Span,
-}
-
 // /// Visibility
 // #[derive(Debug, Clone, PartialEq, Eq)]
 // pub enum Vis {
