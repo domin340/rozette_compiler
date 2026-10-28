@@ -117,3 +117,10 @@ impl<'source> Parser<'source> {
         (v, trailing_comma)
     }
 }
+
+#[macro_export]
+macro_rules! intern_all {
+    ($($s:expr),* $(,)?) => {
+        ($(Symbol::intern($s)),*)
+    };
+}

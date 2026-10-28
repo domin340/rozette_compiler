@@ -133,6 +133,7 @@ mod tests {
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
         ast_decl::{Block, Fn, Item, ItemKind, Local, Mutability, Params, TyPat, TyPatKind},
+        intern_all,
     };
 
     #[test]
@@ -206,12 +207,6 @@ mod tests {
             },
             parser.parse_stmt()
         );
-    }
-
-    macro_rules! intern_all {
-        ($($s:expr),* $(,)?) => {
-            ($(Symbol::intern($s)),*)
-        };
     }
 
     #[test]
