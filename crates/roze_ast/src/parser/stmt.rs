@@ -83,9 +83,11 @@ impl Parser<'_> {
     fn parse_fn_item_params(&mut self) -> Params {
         let token_start = self.token().start;
 
-        // `(x: number, y: number)`
+        self.expect(LParen);
+
+        // `x: number, y: number)`
         //                       ^ optionally a comma can appear making it trailing
-        let (items, trailing) = self.parse_surrounded(LParen, Comma, RParen, Self::parse_fn_param);
+        let (items, trailing) = self.parse_until_terminated(Comma, RParen, Self::parse_fn_param);
 
         Params {
             items,

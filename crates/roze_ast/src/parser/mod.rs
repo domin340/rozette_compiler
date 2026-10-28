@@ -95,16 +95,13 @@ impl<'source> Parser<'source> {
         self.prev = self.stream.advance();
     }
 
-    pub(crate) fn parse_surrounded<T>(
+    pub(crate) fn parse_until_terminated<T>(
         &mut self,
-        open_token: TokenKind,
         sep_token: TokenKind,
         close_token: TokenKind,
         mut f: impl FnMut(&mut Self) -> T,
     ) -> (ThinVec<T>, bool) {
         let mut v = ThinVec::new();
-
-        self.expect(open_token);
         let mut trailing_comma = false;
 
         while !self.check(close_token) {
