@@ -205,6 +205,48 @@ mod tests {
     }
 
     #[test]
+    fn parse_call_expr_2() {
+        let mut parser = Parser::new("true < false()");
+
+        // how I want to do the tests in the future.
+        // assert_eq!(
+        //     binary!(
+        //         lit!(true),
+        //         BinOp::Lt,
+        //         call!(
+        //             lit!(false),
+        //             args![],
+        //         ),
+        //     ),
+        //     parser.parse_expr(),
+        // );
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Binary(
+                    Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Bool(true)),
+                        span: Span::new(0, 4),
+                    }),
+                    BinOp::Lt,
+                    Box::new(Expr {
+                        kind: ExprKind::Call(
+                            Box::new(Expr {
+                                kind: ExprKind::Lit(Lit::Bool(false)),
+                                span: Span::new(7, 12),
+                            }),
+                            thin_vec![]
+                        ),
+                        span: Span::new(7, 14),
+                    }),
+                ),
+                span: Span::new(0, 14),
+            },
+            parser.parse_expr(),
+        );
+    }
+
+    #[test]
     fn parse_call_expr() {
         let (two_sym, x_sym) = intern_all!("2", "x");
         let mut parser = Parser::new("!x(2,) + 2");
