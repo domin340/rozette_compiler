@@ -95,7 +95,7 @@ impl<'source> Parser<'source> {
         self.prev = self.stream.advance();
     }
 
-    pub(crate) fn parse_until_terminated<T>(
+    pub(crate) fn parse_surrounded<T>(
         &mut self,
         sep_token: TokenKind,
         close_token: TokenKind,

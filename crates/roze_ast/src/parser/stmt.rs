@@ -87,7 +87,7 @@ impl Parser<'_> {
 
         // `x: number, y: number)`
         //                       ^ optionally a comma can appear making it trailing
-        let (items, trailing) = self.parse_until_terminated(Comma, RParen, Self::parse_fn_param);
+        let (items, trailing) = self.parse_surrounded(Comma, RParen, Self::parse_fn_param);
 
         Params {
             items,

@@ -119,7 +119,7 @@ impl Parser<'_> {
                     };
                 }
                 LParen => {
-                    let (args, _) = self.parse_until_terminated(Comma, RParen, Self::parse_expr);
+                    let (args, _) = self.parse_surrounded(Comma, RParen, Self::parse_expr);
                     lhs = Expr {
                         kind: ExprKind::Call(lhs.into(), args),
                         span: self.record_span(start_pos),
