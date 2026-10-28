@@ -139,8 +139,36 @@ impl Parser<'_> {
         lhs
     }
 
+    pub(crate) fn can_begin_expr(&self) -> bool {
+        match self.token().kind {
+            Ident | // identifier
+            LParen | LBracket | LCurly | Lt | // group
+            True | False | Str | OpenStr | Num | // literals
+            Exclamation | Minus => true, // unary
+            _ => false,
+        }
+    }
+
+    pub(crate) fn try_parse_expr(&mut self) -> Option<Box<Expr>> {
+        if self.can_begin_expr() {
+            Some(self.parse_expr().into())
+        } else {
+            None
+        }
+    }
+
     pub(crate) fn parse_expr(&mut self) -> Expr {
-        self.parse_expr_in(Prec::Lowest)
+        let token = self.token();
+
+        match token.kind {
+            Return => {
+                self.advance();
+                let kind = ExprKind::Ret(self.try_parse_expr());
+                let span = self.record_span(token.start);
+                Expr { kind, span }
+            }
+            _ => self.parse_expr_in(Prec::Lowest),
+        }
     }
 }
 
@@ -283,6 +311,31 @@ mod tests {
             },
             parser.parse_expr(),
         );
+    }
+
+    #[test]
+    fn parse_return_expr() {
+        let ten_sym = intern_all!("10");
+        let mut parser = Parser::new("return 10 return");
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Ret(Some(Box::new(Expr {
+                    kind: ExprKind::Lit(Lit::Num(ten_sym)),
+                    span: Span::new(7, 9),
+                }))),
+                span: Span::new(0, 9),
+            },
+            parser.parse_expr(),
+        );
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Ret(None),
+                span: Span::new(10, 16),
+            },
+            parser.parse_expr(),
+        )
     }
 
     #[test]
