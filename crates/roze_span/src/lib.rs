@@ -26,7 +26,7 @@ impl std::ops::Index<Span> for str {
 }
 
 impl Span {
-    pub fn new(start: u32, end: u32) -> Self {
+    pub const fn new(start: u32, end: u32) -> Self {
         Self { start, end }
     }
 }
