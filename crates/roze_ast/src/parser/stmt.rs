@@ -94,7 +94,7 @@ impl Parser<'_> {
         }
     }
 
-    fn parse_fn_param(&mut self) -> Param {
+    pub(crate) fn parse_fn_param(&mut self) -> Param {
         let pat = self.parse_pat().into();
 
         let ty = if self.check(Colon) {
