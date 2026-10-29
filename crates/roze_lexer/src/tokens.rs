@@ -36,6 +36,14 @@ pub enum TokenKind {
     Let,
     /// `mut`
     Mut,
+    /// `use`
+    Use,
+    /// `const`
+    Const,
+    /// `static`
+    Static,
+    /// `mod`
+    Mod,
     /// `as`
     As,
     /// `fn`
@@ -106,6 +114,8 @@ pub enum TokenKind {
     Colon,
     /// `->`
     Arrow,
+    /// `::`
+    ColonColon,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -153,6 +163,8 @@ pub fn classify_ident(s: &str) -> TokenKind {
         3 => match s {
             "let" => TokenKind::Let,
             "mut" => TokenKind::Mut,
+            "use" => TokenKind::Use,
+            "mod" => TokenKind::Mod,
             _ => TokenKind::Ident,
         },
         4 => match s {
@@ -161,10 +173,12 @@ pub fn classify_ident(s: &str) -> TokenKind {
         },
         5 => match s {
             "false" => TokenKind::False,
+            "const" => TokenKind::Const,
             _ => TokenKind::Ident,
         },
         6 => match s {
             "return" => TokenKind::Return,
+            "static" => TokenKind::Static,
             _ => TokenKind::Ident,
         },
         _ => TokenKind::Ident,
