@@ -6,6 +6,7 @@ mod stream_source;
 
 use crate::{
     Span,
+    ast_decl::Ident,
     parser::stream_source::{Source, TokenStream},
 };
 use roze_lexer::{Token, TokenKind};
@@ -61,6 +62,14 @@ impl<'source> Parser<'source> {
     pub(crate) fn intern(&self, token: &Token) -> Symbol {
         let s = &self.s[token];
         Symbol::intern(s)
+    }
+
+    #[inline]
+    pub(crate) fn parse_ident(&self, token: &Token) -> Ident {
+        Ident {
+            name: self.intern(token),
+            span: span(token),
+        }
     }
 
     pub(crate) fn expect(&mut self, expected: TokenKind) -> bool {
