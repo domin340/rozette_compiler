@@ -37,9 +37,42 @@ pub enum Lit {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ident {
+    pub name: Symbol,
+    pub span: Span,
+}
+
+impl From<Ident> for Path {
+    fn from(value: Ident) -> Self {
+        Self::Simple(value)
+    }
+}
+
+/// Stores the segment of the path
+/// ```txt
+/// ::hello::world
+/// ^-----^^------^
+///  seg1    seg2
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PathSegment {
+    pub ident: Ident,
+    /// Includes the ColonColon token.
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PathSegs(ThinVec<PathSegment>);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Path {
+    Simple(Ident),
+    Segs(PathSegs),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExprKind {
     Lit(Lit),
-    Ident(Symbol),
     /// Binary operation (`a + 2`)
     Binary(Box<Expr>, BinOp, Box<Expr>),
     /// Unary operation (`!logical`)
@@ -59,6 +92,7 @@ pub enum ExprKind {
     /// | Expr
     /// ```
     Call(Box<Expr>, ThinVec<Expr>),
+    Path(Path),
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,14 +100,14 @@ pub struct Mutability(pub bool);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatKind {
-    Ident(Mutability, Symbol),
+    Ident(Mutability, Ident),
     /// `_`
     Discard,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TyPatKind {
-    Ident(Symbol),
+    Ident(Ident),
     /// `!`
     Never,
     /// `()`
@@ -120,8 +154,7 @@ pub struct Params {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fn {
     // pub vis: Vis,
-    pub name: Symbol,
-    pub name_span: Span,
+    pub ident: Ident,
     pub params: Box<Params>,
     pub block: Block,
     pub ret_ty: Option<Box<TyPat>>,
