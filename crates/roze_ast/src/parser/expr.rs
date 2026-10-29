@@ -1,7 +1,10 @@
-use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, parser::Parser};
+use crate::{
+    BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp,
+    ast_decl::{Ident, Path},
+    parser::{Parser, span},
+};
 use TokenKind::*;
 use roze_lexer::TokenKind;
-use roze_span::Symbol;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Prec {
@@ -55,10 +58,7 @@ impl Parser<'_> {
                 let bool = Lit::Bool(val == True);
                 ExprKind::Lit(bool)
             }
-            Ident => {
-                let sym = Symbol::intern(&self.s[&token]);
-                ExprKind::Ident(sym)
-            }
+            Ident => ExprKind::Path(self.parse_ident(&token).into()),
             k => panic!("unsupported token {k} while parsing lhs expression"),
         };
 
@@ -177,7 +177,7 @@ mod tests {
     use roze_span::{Span, Symbol};
     use thin_vec::thin_vec;
 
-    use crate::{BinOp, Expr, ExprKind, Lit, Parser, UnaryOp, intern_all};
+    use crate::{BinOp, Expr, ExprKind, Lit, Parser, UnaryOp, ast_decl::Ident, intern_all};
 
     #[test]
     fn parse_literals_and_ident() {
@@ -225,7 +225,13 @@ mod tests {
         );
         assert_eq!(
             Expr {
-                kind: ExprKind::Ident(identifier),
+                kind: ExprKind::Path(
+                    Ident {
+                        name: identifier,
+                        span: Span::new(35, 45)
+                    }
+                    .into()
+                ),
                 span: Span::new(35, 45),
             },
             parser.parse_expr()
@@ -288,7 +294,13 @@ mod tests {
                             Box::new(Expr {
                                 kind: ExprKind::Call(
                                     Box::new(Expr {
-                                        kind: ExprKind::Ident(x_sym),
+                                        kind: ExprKind::Path(
+                                            Ident {
+                                                name: x_sym,
+                                                span: Span::new(1, 2),
+                                            }
+                                            .into()
+                                        ),
                                         span: Span::new(1, 2),
                                     }),
                                     thin_vec![Expr {

@@ -51,8 +51,7 @@ impl Parser<'_> {
                 let block = self.parse_stmt_block();
 
                 let fn_struct = Fn {
-                    name: self.intern(&name_token),
-                    name_span: span(&name_token),
+                    ident: self.parse_ident(&name_token),
                     params: params.into(),
                     ret_ty,
                     block,
@@ -129,7 +128,7 @@ mod tests {
 
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
-        ast_decl::{Block, Fn, Local, Mutability, Params, TyPat, TyPatKind},
+        ast_decl::{Block, Fn, Ident, Local, Mutability, Params, TyPat, TyPatKind},
         intern_all,
     };
 
@@ -194,7 +193,13 @@ mod tests {
             Stmt {
                 kind: StmtKind::Let(Box::new(Local {
                     pat: Box::new(Pat {
-                        kind: PatKind::Ident(Mutability(true), a_sym),
+                        kind: PatKind::Ident(
+                            Mutability(true),
+                            Ident {
+                                name: a_sym,
+                                span: Span::new(8, 9),
+                            }
+                        ),
                         span: Span::new(4, 9),
                     }),
                     val: None,
@@ -216,7 +221,13 @@ mod tests {
                 Stmt {
                     kind: StmtKind::Let(Box::new(Local {
                         pat: Box::new(Pat {
-                            kind: PatKind::Ident(Mutability(false), a_sym),
+                            kind: PatKind::Ident(
+                                Mutability(false),
+                                Ident {
+                                    name: a_sym,
+                                    span: Span::new(22, 23),
+                                }
+                            ),
                             span: Span::new(22, 23),
                         }),
                         ty: None,
@@ -229,7 +240,13 @@ mod tests {
                 },
                 Stmt {
                     kind: StmtKind::Expr(Box::new(Expr {
-                        kind: ExprKind::Ident(a_sym),
+                        kind: ExprKind::Path(
+                            Ident {
+                                name: a_sym,
+                                span: Span::new(30, 31),
+                            }
+                            .into()
+                        ),
                         span: Span::new(30, 31),
                     })),
                     span: Span::new(30, 31),
@@ -248,8 +265,10 @@ mod tests {
         assert_eq!(
             Stmt {
                 kind: StmtKind::Fn(Box::new(Fn {
-                    name: name_sym,
-                    name_span: Span::new(3, 7),
+                    ident: Ident {
+                        name: name_sym,
+                        span: Span::new(3, 7)
+                    },
                     params: Box::new(Params {
                         items: thin_vec![],
                         trailing: false,

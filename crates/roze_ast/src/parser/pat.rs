@@ -12,11 +12,16 @@ impl Parser<'_> {
         self.advance();
 
         let pat_kind = match token.kind {
-            Mut => {
-                self.expect(Ident);
-                PatKind::Ident(Mutability(true), self.intern(&self.prev))
+            k @ (Mut | Ident) => {
+                let m = if k == Mut {
+                    self.expect(Ident);
+                    Mutability(true)
+                } else {
+                    Mutability(false)
+                };
+
+                PatKind::Ident(m, self.parse_ident(&self.prev).into())
             }
-            Ident => PatKind::Ident(Mutability(false), self.intern(&token)),
             Underscore => PatKind::Discard,
             _ => panic!("Unexpected token: {token} while parsing pattern"),
         };
@@ -32,7 +37,7 @@ impl Parser<'_> {
         self.advance();
 
         let ty_kind = match token.kind {
-            Ident => TyPatKind::Ident(self.intern(&token)),
+            Ident => TyPatKind::Ident(self.parse_ident(&token).into()),
             Exclamation => TyPatKind::Never,
             LParen => {
                 if self.check(RParen) {
