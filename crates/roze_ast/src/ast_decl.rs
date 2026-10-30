@@ -113,7 +113,7 @@ pub enum PatKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TyPatKind {
-    Ident(Ident),
+    Path(Path),
     /// `!`
     Never,
     /// `()`

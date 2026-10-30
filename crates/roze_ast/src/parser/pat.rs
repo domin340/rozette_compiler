@@ -37,7 +37,7 @@ impl Parser<'_> {
         self.advance();
 
         let ty_kind = match token.kind {
-            Ident => TyPatKind::Ident(self.parse_ident(&token).into()),
+            ColonColon | Ident => TyPatKind::Path(self.parse_path(&token)),
             Exclamation => TyPatKind::Never,
             LParen => {
                 if self.check(RParen) {

@@ -128,7 +128,9 @@ mod tests {
 
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
-        ast_decl::{Block, Fn, Ident, Local, Mutability, Params, TyPat, TyPatKind},
+        ast_decl::{
+            Block, Fn, Ident, Local, Mutability, Params, Path, PathSeg, PathSegs, TyPat, TyPatKind,
+        },
         intern_all,
     };
 
@@ -284,5 +286,44 @@ mod tests {
             },
             parser.parse_stmt(),
         );
+    }
+
+    #[test]
+    fn parse_typed_let_stmt() {
+        let (a, number) = intern_all!("a", "number");
+        let mut parser = Parser::new("let a: ::number;");
+
+        assert_eq!(
+            Stmt {
+                kind: StmtKind::Let(Box::new(Local {
+                    pat: Box::new(Pat {
+                        kind: PatKind::Ident(
+                            Mutability(false),
+                            Ident {
+                                name: a,
+                                span: Span::new(4, 5)
+                            }
+                        ),
+                        span: Span::new(4, 5),
+                    }),
+                    ty: Some(Box::new(TyPat {
+                        kind: TyPatKind::Path(
+                            PathSegs(thin_vec![PathSeg {
+                                ident: Ident {
+                                    name: number,
+                                    span: Span::new(9, 15)
+                                },
+                                span: Span::new(7, 15),
+                            }])
+                            .into()
+                        ),
+                        span: Span::new(7, 15)
+                    })),
+                    val: None,
+                })),
+                span: Span::new(0, 16),
+            },
+            parser.parse_stmt(),
+        )
     }
 }
