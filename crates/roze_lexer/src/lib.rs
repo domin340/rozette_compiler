@@ -218,7 +218,10 @@ impl<'source> Lexer<'source> {
             ')' => TokenKind::RParen,
             '{' => TokenKind::LCurly,
             '}' => TokenKind::RCurly,
-            ':' if self.first() == ':' => TokenKind::ColonColon,
+            ':' if self.first() == ':' => {
+                self.bump();
+                TokenKind::ColonColon
+            }
             ':' => TokenKind::Colon,
             '=' if self.first() == '=' => {
                 self.bump();
