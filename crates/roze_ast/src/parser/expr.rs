@@ -1,10 +1,14 @@
+use std::debug_assert_matches;
+
 use crate::{
     BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp,
-    ast_decl::{Ident, Path},
+    ast_decl::{Path, PathSeg, PathSegs},
     parser::{Parser, span},
 };
 use TokenKind::*;
-use roze_lexer::TokenKind;
+use roze_lexer::{Token, TokenKind};
+use roze_span::Span;
+use thin_vec::thin_vec;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Prec {
@@ -37,6 +41,44 @@ impl Prec {
 }
 
 impl Parser<'_> {
+    pub(crate) fn parse_path(&mut self, start: &Token) -> Path {
+        debug_assert_matches!(start.kind, ColonColon | Ident);
+
+        let first_seg = match start.kind {
+            Ident if self.token().kind != ColonColon => {
+                return Path::Simple(self.parse_ident(start));
+            }
+            Ident => PathSeg {
+                ident: self.parse_ident(start),
+                span: span(start),
+            },
+            ColonColon => {
+                self.expect(Ident);
+                PathSeg {
+                    ident: self.parse_ident(&self.prev),
+                    span: Span::new(start.start, self.prev.end),
+                }
+            }
+            _ => unreachable!("`start.kind` can only be either <ident> or `::`"),
+        };
+
+        let mut segs = thin_vec![first_seg];
+
+        while let token = self.token()
+            && token.kind == ColonColon
+        {
+            self.advance();
+            self.expect(Ident);
+
+            segs.push(PathSeg {
+                ident: self.parse_ident(&self.prev),
+                span: Span::new(token.start, self.prev.end),
+            })
+        }
+
+        Path::Segs(PathSegs(segs))
+    }
+
     pub(crate) fn parse_lhs_expr(&mut self) -> Expr {
         let token = self.token();
         self.advance(); // skipped in every case
@@ -58,7 +100,7 @@ impl Parser<'_> {
                 let bool = Lit::Bool(val == True);
                 ExprKind::Lit(bool)
             }
-            Ident => ExprKind::Path(self.parse_ident(&token).into()),
+            ColonColon | Ident => ExprKind::Path(self.parse_path(&token)),
             k => panic!("unsupported token {k} while parsing lhs expression"),
         };
 
@@ -141,7 +183,7 @@ impl Parser<'_> {
 
     pub(crate) fn can_begin_expr(&self) -> bool {
         match self.token().kind {
-            Ident | // identifier
+            Ident | ColonColon | // ident, path start
             LParen | LBracket | LCurly | Lt | // group
             True | False | Str | OpenStr | Num | // literals
             Exclamation | Minus => true, // unary
@@ -177,7 +219,11 @@ mod tests {
     use roze_span::{Span, Symbol};
     use thin_vec::thin_vec;
 
-    use crate::{BinOp, Expr, ExprKind, Lit, Parser, UnaryOp, ast_decl::Ident, intern_all};
+    use crate::{
+        BinOp, Expr, ExprKind, Lit, Parser, UnaryOp,
+        ast_decl::{Ident, Path, PathSeg, PathSegs},
+        intern_all,
+    };
 
     #[test]
     fn parse_literals_and_ident() {
@@ -348,6 +394,68 @@ mod tests {
             },
             parser.parse_expr(),
         )
+    }
+
+    #[test]
+    fn parse_path_segs_glob() {
+        let std = intern_all!("std");
+        let mut parser = Parser::new("::std");
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Path(
+                    PathSegs(thin_vec![PathSeg {
+                        ident: Ident {
+                            name: std,
+                            span: Span::new(2, 5),
+                        },
+                        span: Span::new(0, 5)
+                    }])
+                    .into()
+                ),
+                span: Span::new(0, 5),
+            },
+            parser.parse_expr()
+        );
+    }
+
+    #[test]
+    fn parse_path_segs() {
+        let (hello, world, b) = intern_all!("hello", "world", "b");
+        let mut parser = Parser::new("hello::world::b");
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Path(
+                    PathSegs(thin_vec![
+                        PathSeg {
+                            ident: Ident {
+                                name: hello,
+                                span: Span::new(0, 5),
+                            },
+                            span: Span::new(0, 5),
+                        },
+                        PathSeg {
+                            ident: Ident {
+                                name: world,
+                                span: Span::new(7, 12),
+                            },
+                            span: Span::new(5, 12),
+                        },
+                        PathSeg {
+                            ident: Ident {
+                                name: b,
+                                span: Span::new(14, 15),
+                            },
+                            span: Span::new(12, 15),
+                        },
+                    ])
+                    .into()
+                ),
+                span: Span::new(0, 15),
+            },
+            parser.parse_expr(),
+        );
     }
 
     #[test]
