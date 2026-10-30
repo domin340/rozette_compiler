@@ -221,7 +221,7 @@ mod tests {
 
     use crate::{
         BinOp, Expr, ExprKind, Lit, Parser, UnaryOp,
-        ast_decl::{Ident, Path, PathSeg, PathSegs},
+        ast_decl::{Ident, PathSeg, PathSegs},
         intern_all,
     };
 

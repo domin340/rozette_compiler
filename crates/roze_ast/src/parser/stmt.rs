@@ -1,7 +1,7 @@
 use crate::{
     Pat, Stmt, StmtKind,
     ast_decl::{Block, Fn, Local, Param, Params},
-    parser::{Parser, span},
+    parser::Parser,
 };
 use TokenKind::*;
 use roze_lexer::TokenKind;
