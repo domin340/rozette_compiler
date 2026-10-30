@@ -55,14 +55,20 @@ impl From<Ident> for Path {
 ///  seg1    seg2
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PathSegment {
+pub struct PathSeg {
     pub ident: Ident,
     /// Includes the ColonColon token.
     pub span: Span,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PathSegs(ThinVec<PathSegment>);
+pub struct PathSegs(pub ThinVec<PathSeg>);
+
+impl From<PathSegs> for Path {
+    fn from(value: PathSegs) -> Self {
+        Self::Segs(value)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Path {
