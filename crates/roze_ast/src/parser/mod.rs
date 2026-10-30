@@ -59,15 +59,9 @@ impl<'source> Parser<'source> {
     /// Internalizes the data in the range of Token's span.
     /// See [`Symbol::intern`].
     #[inline]
-    pub(crate) fn intern(&self, token: &Token) -> Symbol {
-        let s = &self.s[token];
-        Symbol::intern(s)
-    }
-
-    #[inline]
     pub(crate) fn parse_ident(&self, token: &Token) -> Ident {
         Ident {
-            name: self.intern(token),
+            name: Symbol::intern(&self.s[token]),
             span: span(token),
         }
     }
