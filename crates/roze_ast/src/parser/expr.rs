@@ -41,50 +41,23 @@ impl Prec {
 }
 
 impl Parser<'_> {
-    pub(crate) fn parse_path(&mut self, start: &Token) -> Path {
-        debug_assert_matches!(start.kind, ColonColon | Ident);
+    fn parse_path_expr(&mut self) -> Path {
+        let (path, trailing_colon) = self.parse_path_lenient();
 
-        let first_seg = match start.kind {
-            Ident if self.token().kind != ColonColon => {
-                return Path::Simple(self.parse_ident(start));
-            }
-            Ident => PathSeg {
-                ident: self.parse_ident(start),
-                span: span(start),
-            },
-            ColonColon => {
-                self.expect(Ident);
-                PathSeg {
-                    ident: self.parse_ident(&self.prev),
-                    span: Span::new(start.start, self.prev.end),
-                }
-            }
-            _ => unreachable!("`start.kind` can only be either <ident> or `::`"),
-        };
-
-        let mut segs = thin_vec![first_seg];
-
-        while let token = self.token()
-            && token.kind == ColonColon
-        {
-            self.advance();
-            self.expect(Ident);
-
-            segs.push(PathSeg {
-                ident: self.parse_ident(&self.prev),
-                span: Span::new(token.start, self.prev.end),
-            })
+        if trailing_colon {
+            let t = self.prev.kind;
+            panic!("Expected <ident> or generic argument. Found {t}.");
         }
 
-        Path::Segs(PathSegs(segs))
+        path
     }
 
     pub(crate) fn parse_lhs_expr(&mut self) -> Expr {
         let token = self.token();
-        self.advance(); // skipped in every case
 
         let expr_kind = match token.kind {
             unary @ (Minus | Exclamation) => {
+                self.advance();
                 let op = match unary {
                     Minus => UnaryOp::Minus,
                     Exclamation => UnaryOp::BitNot,
@@ -94,14 +67,18 @@ impl Parser<'_> {
                 let rhs = self.parse_expr_in(Prec::Unary).into();
                 ExprKind::Unary(op, rhs)
             }
-            Str => ExprKind::Lit(self.parse_str_lit(&token)),
-            Num => ExprKind::Lit(self.parse_num_lit(&token)),
+            Str => ExprKind::Lit(self.parse_str_lit()),
+            Num => ExprKind::Lit(self.parse_num_lit()),
             val @ (True | False) => {
+                self.advance();
                 let bool = Lit::Bool(val == True);
                 ExprKind::Lit(bool)
             }
-            ColonColon | Ident => ExprKind::Path(self.parse_path(&token)),
-            k => panic!("unsupported token {k} while parsing lhs expression"),
+            ColonColon | Ident => ExprKind::Path(self.parse_path_expr()),
+            k => {
+                self.advance();
+                panic!("unsupported token {k} while parsing lhs expression");
+            }
         };
 
         Expr {

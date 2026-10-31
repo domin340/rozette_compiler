@@ -1,11 +1,11 @@
-use roze_lexer::Token;
 use roze_span::Symbol;
 
 use crate::{Lit, parser::Parser};
 
 impl Parser<'_> {
-    pub(crate) fn parse_str_lit(&mut self, t: &Token) -> Lit {
-        let s = &self.s[t];
+    pub(crate) fn parse_str_lit(&mut self) -> Lit {
+        self.advance();
+        let s = &self.s[&self.prev];
 
         let bytes = s.as_bytes();
         if bytes.len() < 2 // the length must be sufficient, at least have 2 quotes
@@ -23,8 +23,9 @@ impl Parser<'_> {
         Lit::Str(str_sym)
     }
 
-    pub(crate) fn parse_num_lit(&mut self, t: &Token) -> Lit {
-        let s = &self.s[t];
+    pub(crate) fn parse_num_lit(&mut self) -> Lit {
+        self.advance();
+        let s = &self.s[&self.prev];
         let (prefix_len, radix) = prefix_and_radix(s.as_bytes());
 
         let mut chars = s[prefix_len..].chars().peekable();
