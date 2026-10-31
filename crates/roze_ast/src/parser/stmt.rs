@@ -1,17 +1,99 @@
 use crate::{
     Pat, Stmt, StmtKind,
-    ast_decl::{Block, Fn, Local, Param, Params},
-    parser::Parser,
+    ast_decl::{Block, Fn, Local, Param, Params, Path, PathSeg, PathSegs, UseTree, UseTreeSuf},
+    parser::{Parser, span},
 };
 use TokenKind::*;
 use roze_lexer::TokenKind;
-use thin_vec::ThinVec;
+use roze_span::Span;
+use thin_vec::{ThinVec, thin_vec};
 
 impl Parser<'_> {
+    /// `(leniently_parsed_path, trailing_colon_colon_token)`
+    pub(crate) fn parse_path_lenient(&mut self) -> (Path, bool) {
+        let start = self.token();
+        if start.kind == Ident && self.stream.nth(1).kind != ColonColon {
+            self.advance();
+            return (Path::Simple(self.parse_ident(&start)), false);
+        }
+
+        let mut segs = thin_vec![];
+
+        if start.kind == Ident {
+            self.advance();
+            segs.push(PathSeg {
+                ident: self.parse_ident(&start),
+                span: span(&start),
+            });
+        }
+
+        let mut trailing_colon = false;
+
+        while let token = self.token()
+            && token.kind == ColonColon
+        {
+            self.advance(); // ColonColon
+
+            if !self.is(Ident) {
+                trailing_colon = true;
+                break;
+            }
+
+            self.advance(); // Ident
+            segs.push(PathSeg {
+                ident: self.parse_ident(&self.prev),
+                span: Span::new(token.start, self.prev.end),
+            });
+        }
+
+        (PathSegs(segs).into(), trailing_colon)
+    }
+
+    fn parse_use_tree(&mut self) -> UseTree {
+        let (pref, trailing_colon) = self.parse_path_lenient();
+
+        let suf_token = self.token();
+        let suf = match suf_token.kind {
+            As => {
+                self.advance();
+                self.expect(Ident);
+                Some(UseTreeSuf::As(
+                    Span::new(suf_token.start, self.prev.end),
+                    self.parse_ident(&self.prev),
+                ))
+            }
+            Asterisk if trailing_colon => {
+                let start = self.prev.start;
+                self.advance();
+                Some(UseTreeSuf::All(self.record_span(start)))
+            }
+            LCurly if trailing_colon => {
+                let start = self.prev.start;
+                self.advance();
+                let (items, _) = self.parse_surrounded(Comma, RCurly, Self::parse_use_tree);
+                Some(UseTreeSuf::Nested(items, self.record_span(start)))
+            }
+            _ => None,
+        };
+
+        self.expect(Semi);
+
+        let span = self.record_span(pref.span().start);
+        UseTree { pref, suf, span }
+    }
+
     pub(crate) fn parse_stmt(&mut self) -> Stmt {
         let token = self.token();
 
         let stmt_kind = match token.kind {
+            Use => {
+                self.advance();
+
+                let tree = self.parse_use_tree();
+                self.expect(Semi);
+
+                StmtKind::Use(tree.into())
+            }
             Let => {
                 self.advance();
                 let pat: Box<Pat> = self.parse_pat().into();
@@ -129,7 +211,7 @@ mod tests {
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
         ast_decl::{
-            Block, Fn, Ident, Local, Mutability, Params, Path, PathSeg, PathSegs, TyPat, TyPatKind,
+            Block, Fn, Ident, Local, Mutability, Params, PathSeg, PathSegs, TyPat, TyPatKind,
         },
         intern_all,
     };
