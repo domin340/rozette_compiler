@@ -41,7 +41,7 @@ impl Prec {
 }
 
 impl Parser<'_> {
-    fn parse_path_expr(&mut self) -> Path {
+    pub(crate) fn parse_path_expr(&mut self) -> Path {
         let (path, trailing_colon) = self.parse_path_lenient();
 
         if trailing_colon {

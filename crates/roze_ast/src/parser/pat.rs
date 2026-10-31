@@ -34,12 +34,15 @@ impl Parser<'_> {
 
     pub(crate) fn parse_ty_pat(&mut self) -> TyPat {
         let token = self.token();
-        self.advance();
 
         let ty_kind = match token.kind {
-            ColonColon | Ident => TyPatKind::Path(self.parse_path(&token)),
-            Exclamation => TyPatKind::Never,
+            ColonColon | Ident => TyPatKind::Path(self.parse_path_expr()),
+            Exclamation => {
+                self.advance();
+                TyPatKind::Never
+            }
             LParen => {
+                self.advance();
                 if self.check(RParen) {
                     TyPatKind::Unit
                 } else {
@@ -47,7 +50,10 @@ impl Parser<'_> {
                     todo!("type tuple hasn't been implemented")
                 }
             }
-            _ => panic!("Unexpected token: {token} while parsing type pattern"),
+            _ => {
+                self.advance();
+                panic!("Unexpected token: {token} while parsing type pattern");
+            }
         };
 
         TyPat {
