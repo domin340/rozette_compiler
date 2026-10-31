@@ -64,6 +64,20 @@ pub struct PathSeg {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PathSegs(pub ThinVec<PathSeg>);
 
+impl std::ops::Index<usize> for PathSegs {
+    type Output = PathSeg;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl std::ops::IndexMut<usize> for PathSegs {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
 impl From<PathSegs> for Path {
     fn from(value: PathSegs) -> Self {
         Self::Segs(value)
@@ -74,6 +88,15 @@ impl From<PathSegs> for Path {
 pub enum Path {
     Simple(Ident),
     Segs(PathSegs),
+}
+
+impl Path {
+    pub fn span(&self) -> Span {
+        match self {
+            Self::Simple(ident) => ident.span.clone(),
+            Self::Segs(segs) => segs[0].span.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -121,7 +144,25 @@ pub enum TyPatKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UseTreeSuf {
+    /// (`as my_renamed`)
+    As(Span, Ident),
+    /// (`::{Hello, World}`)
+    Nested(ThinVec<UseTree>, Span),
+    /// (`::*`)
+    All(Span),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UseTree {
+    pub pref: Path,
+    pub suf: Option<UseTreeSuf>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StmtKind {
+    Use(Box<UseTree>),
     Fn(Box<Fn>),
     Let(Box<Local>),
     Semi(Box<Expr>),
