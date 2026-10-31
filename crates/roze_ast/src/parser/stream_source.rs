@@ -100,6 +100,16 @@ impl TokenStream {
         token.clone()
     }
 
+    #[inline]
+    pub fn skip(&mut self, n: usize) {
+        self.index = self.index.saturating_add(n).min(self.tokens.len() - 1)
+    }
+
+    #[inline]
+    pub fn prev(&self) -> Token {
+        self.get(self.index - 1)
+    }
+
     /// Returns token that the lexer stream is currently pointing at
     #[inline]
     pub fn cur(&self) -> Token {
