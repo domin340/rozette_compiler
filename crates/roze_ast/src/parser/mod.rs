@@ -98,6 +98,12 @@ impl<'source> Parser<'source> {
         self.prev = self.stream.advance();
     }
 
+    #[inline]
+    pub(crate) fn skip(&mut self, n: usize) {
+        self.stream.skip(n);
+        self.prev = self.stream.prev();
+    }
+
     pub(crate) fn parse_surrounded<T>(
         &mut self,
         sep_token: TokenKind,
