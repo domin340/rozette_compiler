@@ -48,6 +48,10 @@ pub enum TokenKind {
     As,
     /// `fn`
     Fn,
+    /// `pub`
+    Pub,
+    /// `in`
+    In,
     /// <num>
     Num,
     /// <str>
@@ -153,34 +157,38 @@ pub fn is_ident_continue(c: char) -> bool {
 }
 
 pub fn classify_ident(s: &str) -> TokenKind {
+    use TokenKind::*;
+
     match s.len() {
         1 if s == "_" => TokenKind::Underscore,
         2 => match s {
-            "as" => TokenKind::As,
-            "fn" => TokenKind::Fn,
-            _ => TokenKind::Ident,
+            "as" => As,
+            "fn" => Fn,
+            "in" => In,
+            _ => Ident,
         },
         3 => match s {
-            "let" => TokenKind::Let,
-            "mut" => TokenKind::Mut,
-            "use" => TokenKind::Use,
-            "mod" => TokenKind::Mod,
-            _ => TokenKind::Ident,
+            "let" => Let,
+            "mut" => Mut,
+            "use" => Use,
+            "mod" => Mod,
+            "pub" => Pub,
+            _ => Ident,
         },
         4 => match s {
-            "true" => TokenKind::True,
-            _ => TokenKind::Ident,
+            "true" => True,
+            _ => Ident,
         },
         5 => match s {
-            "false" => TokenKind::False,
-            "const" => TokenKind::Const,
-            _ => TokenKind::Ident,
+            "false" => False,
+            "const" => Const,
+            _ => Ident,
         },
         6 => match s {
-            "return" => TokenKind::Return,
-            "static" => TokenKind::Static,
-            _ => TokenKind::Ident,
+            "return" => Return,
+            "static" => Static,
+            _ => Ident,
         },
-        _ => TokenKind::Ident,
+        _ => Ident,
     }
 }
