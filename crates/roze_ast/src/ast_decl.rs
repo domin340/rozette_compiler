@@ -64,20 +64,6 @@ pub struct PathSeg {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PathSegs(pub ThinVec<PathSeg>);
 
-impl std::ops::Index<usize> for PathSegs {
-    type Output = PathSeg;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl std::ops::IndexMut<usize> for PathSegs {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0[index]
-    }
-}
-
 impl From<PathSegs> for Path {
     fn from(value: PathSegs) -> Self {
         Self::Segs(value)
@@ -94,7 +80,9 @@ impl Path {
     pub fn span(&self) -> Span {
         match self {
             Self::Simple(ident) => ident.span.clone(),
-            Self::Segs(segs) => segs[0].span.clone(),
+            Self::Segs(PathSegs(segs)) => {
+                Span::new(segs[0].span.start, segs.last().unwrap().span.end)
+            }
         }
     }
 }
