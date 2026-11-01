@@ -152,6 +152,7 @@ pub struct UseTree {
 pub enum StmtKind {
     Use(Box<UseTree>),
     Fn(Box<Fn>),
+    Const(Box<Local>),
     Let(Box<Local>),
     Semi(Box<Expr>),
     Expr(Box<Expr>),
