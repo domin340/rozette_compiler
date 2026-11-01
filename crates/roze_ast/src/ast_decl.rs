@@ -154,6 +154,7 @@ pub enum StmtKind {
     Fn(Box<Fn>),
     Const(Box<Local>),
     Let(Box<Local>),
+    Static(Box<Local>),
     Semi(Box<Expr>),
     Expr(Box<Expr>),
 }

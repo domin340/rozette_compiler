@@ -100,7 +100,7 @@ impl Parser<'_> {
 
                 StmtKind::Use(tree.into())
             }
-            kw @ (Const | Let) => {
+            kw @ (Const | Static | Let) => {
                 self.advance();
                 let pat: Box<Pat> = self.parse_pat().into();
 
@@ -122,7 +122,8 @@ impl Parser<'_> {
                 match kw {
                     Let => StmtKind::Let(local),
                     Const => StmtKind::Const(local),
-                    k => unreachable!("{k} is not guarded in stmt Let|Const."),
+                    Static => StmtKind::Static(local),
+                    k => unreachable!("{k} is not guarded in stmt Const|Static|Let."),
                 }
             }
             Fn => {
