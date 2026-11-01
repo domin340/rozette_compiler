@@ -63,17 +63,23 @@ impl Parser<'_> {
                 ))
             }
             Asterisk if trailing_colon => {
-                let start = self.prev.start;
+                let start = self.prev.start; // ColonColon token
                 self.advance();
                 Some(UseTreeSuf::All(self.record_span(start)))
             }
             LCurly if trailing_colon => {
-                let start = self.prev.start;
+                let start = self.prev.start; // ColonColon token
                 self.advance();
                 let (items, _) = self.parse_surrounded(Comma, RCurly, Self::parse_use_tree);
                 Some(UseTreeSuf::Nested(items, self.record_span(start)))
             }
-            _ => None,
+            k => {
+                if trailing_colon {
+                    panic!("Expected <ident> while parsing use tree. Found {k}");
+                }
+
+                None
+            }
         };
 
         self.expect(Semi);
@@ -94,7 +100,7 @@ impl Parser<'_> {
 
                 StmtKind::Use(tree.into())
             }
-            Let => {
+            kw @ (Const | Let) => {
                 self.advance();
                 let pat: Box<Pat> = self.parse_pat().into();
 
@@ -112,7 +118,12 @@ impl Parser<'_> {
 
                 self.expect(Semi);
 
-                StmtKind::Let(Box::new(Local { pat, val, ty }))
+                let local = Box::new(Local { pat, val, ty });
+                match kw {
+                    Let => StmtKind::Let(local),
+                    Const => StmtKind::Const(local),
+                    k => unreachable!("{k} is not guarded in stmt Let|Const."),
+                }
             }
             Fn => {
                 self.advance();
