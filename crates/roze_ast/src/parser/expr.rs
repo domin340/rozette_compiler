@@ -1,4 +1,4 @@
-use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, ast_decl::Path, parser::Parser};
+use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, parser::Parser};
 use TokenKind::*;
 use roze_lexer::TokenKind;
 

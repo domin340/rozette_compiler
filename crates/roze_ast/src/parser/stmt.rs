@@ -48,13 +48,11 @@ impl Parser<'_> {
         {
             self.advance(); // ColonColon
 
-            // FIXME: make this self.check
-            if !self.is(Ident) {
+            if !self.check(Ident) {
                 trailing_colon = true;
                 break;
             }
 
-            self.advance(); // Ident
             segs.push(PathSeg {
                 ident: self.parse_ident(&self.prev),
                 span: Span::new(token.start, self.prev.end),
@@ -225,8 +223,7 @@ impl Parser<'_> {
             }
             _ => {
                 let expr = self.parse_expr().into();
-                if self.is(Semi) {
-                    self.advance();
+                if self.check(Semi) {
                     StmtKind::Semi(expr)
                 } else {
                     StmtKind::Expr(expr)
