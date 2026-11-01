@@ -33,17 +33,6 @@ impl Prec {
 }
 
 impl Parser<'_> {
-    pub(crate) fn parse_path_expr(&mut self) -> Path {
-        let (path, trailing_colon) = self.parse_path_lenient();
-
-        if trailing_colon {
-            let t = self.prev.kind;
-            panic!("Expected <ident> or generic argument. Found {t}.");
-        }
-
-        path
-    }
-
     pub(crate) fn parse_lhs_expr(&mut self) -> Expr {
         let token = self.token();
 
@@ -66,7 +55,7 @@ impl Parser<'_> {
                 let bool = Lit::Bool(val == True);
                 ExprKind::Lit(bool)
             }
-            ColonColon | Ident => ExprKind::Path(self.parse_path_expr()),
+            ColonColon | Ident => ExprKind::Path(self.parse_path()),
             k => {
                 self.advance();
                 panic!("unsupported token {k} while parsing lhs expression");

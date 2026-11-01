@@ -1,6 +1,9 @@
 use crate::{
     Pat, Stmt, StmtKind,
-    ast_decl::{Block, Fn, Local, Param, Params, Path, PathSeg, PathSegs, UseTree, UseTreeSuf},
+    ast_decl::{
+        Block, Fn, Item, ItemKind, Local, Param, Params, Path, PathSeg, PathSegs, UseTree,
+        UseTreeSuf, Vis,
+    },
     parser::{Parser, span},
 };
 use TokenKind::*;
@@ -9,6 +12,17 @@ use roze_span::Span;
 use thin_vec::{ThinVec, thin_vec};
 
 impl Parser<'_> {
+    pub(crate) fn parse_path(&mut self) -> Path {
+        let (path, trailing_colon) = self.parse_path_lenient();
+
+        if trailing_colon {
+            let t = self.prev.kind;
+            panic!("Expected <ident> or generic argument. Found {t}.");
+        }
+
+        path
+    }
+
     /// `(leniently_parsed_path, trailing_colon_colon_token)`
     pub(crate) fn parse_path_lenient(&mut self) -> (Path, bool) {
         let start = self.token();
@@ -34,6 +48,7 @@ impl Parser<'_> {
         {
             self.advance(); // ColonColon
 
+            // FIXME: make this self.check
             if !self.is(Ident) {
                 trailing_colon = true;
                 break;
@@ -88,42 +103,75 @@ impl Parser<'_> {
         UseTree { pref, suf, span }
     }
 
-    pub(crate) fn parse_stmt(&mut self) -> Stmt {
-        let token = self.token();
+    fn parse_vis(&mut self) -> Vis {
+        if self.check(Pub) {
+            let start = self.prev.start;
+            if self.check(LParen) {
+                let shorthard = !self.check(In);
+                let path = Box::new(self.parse_path());
 
-        let stmt_kind = match token.kind {
+                // the end of the restricted
+                self.expect(RParen);
+                let span = self.record_span(start);
+
+                Vis::Restricted {
+                    path,
+                    span,
+                    shorthard,
+                }
+            } else {
+                Vis::Pub
+            }
+        } else {
+            Vis::Default
+        }
+    }
+
+    /// Parses the inner body of the local.
+    /// Captures: Pattern, optionally Type Pattern and Expression.
+    /// (`<pat>(: <ty_pat>)? (= <expr>)?`)
+    /// Used after keywords to declare variables, constants and static variables.
+    fn parse_local(&mut self) -> Local {
+        let pat: Box<Pat> = self.parse_pat().into();
+
+        let ty = if self.check(Colon) {
+            Some(Box::new(self.parse_ty_pat()))
+        } else {
+            None
+        };
+
+        let val = if self.check(Eq) {
+            Some(Box::new(self.parse_expr()))
+        } else {
+            None
+        };
+
+        self.expect(Semi);
+
+        Local { pat, ty, val }
+    }
+
+    fn parse_item(&mut self) -> Item {
+        let start = self.token().start;
+        let vis = self.parse_vis();
+
+        let token = self.token();
+        let kind = match token.kind {
             Use => {
                 self.advance();
-
                 let tree = self.parse_use_tree();
                 self.expect(Semi);
-
-                StmtKind::Use(tree.into())
+                ItemKind::Use(tree.into())
             }
-            kw @ (Const | Static | Let) => {
+            kw @ (Static | Const) => {
                 self.advance();
-                let pat: Box<Pat> = self.parse_pat().into();
 
-                let ty = if self.check(Colon) {
-                    Some(Box::new(self.parse_ty_pat()))
-                } else {
-                    None
-                };
+                let local = Box::new(self.parse_local());
 
-                let val = if self.check(Eq) {
-                    Some(Box::new(self.parse_expr()))
-                } else {
-                    None
-                };
-
-                self.expect(Semi);
-
-                let local = Box::new(Local { pat, val, ty });
                 match kw {
-                    Let => StmtKind::Let(local),
-                    Const => StmtKind::Const(local),
-                    Static => StmtKind::Static(local),
-                    k => unreachable!("{k} is not guarded in stmt Const|Static|Let."),
+                    Static => ItemKind::Static(local),
+                    Const => ItemKind::Const(local),
+                    _ => unreachable!("`kw` doesn't guard all cases. Found {kw}"),
                 }
             }
             Fn => {
@@ -144,14 +192,36 @@ impl Parser<'_> {
                 // { <stmt>* }
                 let block = self.parse_stmt_block();
 
-                let fn_struct = Fn {
+                ItemKind::Fn(Box::new(Fn {
                     ident: self.parse_ident(&name_token),
                     params: params.into(),
                     ret_ty,
                     block,
-                };
+                }))
+            }
+            k => panic!("{k} is not a valid Item start."),
+        };
 
-                StmtKind::Fn(fn_struct.into())
+        let span = self.record_span(start);
+        Item { vis, kind, span }
+    }
+
+    pub(crate) fn can_begin_item(&self) -> bool {
+        match self.token().kind {
+            Pub | Use | Fn | Const | Static => true,
+            _ => false,
+        }
+    }
+
+    pub(crate) fn parse_stmt(&mut self) -> Stmt {
+        let token = self.token();
+
+        let stmt_kind = match token.kind {
+            _ if self.can_begin_item() => StmtKind::Item(self.parse_item().into()),
+            Let => {
+                self.advance(); // the keyword
+                let local = self.parse_local();
+                StmtKind::Let(Box::new(local))
             }
             _ => {
                 let expr = self.parse_expr().into();
@@ -223,7 +293,8 @@ mod tests {
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
         ast_decl::{
-            Block, Fn, Ident, Local, Mutability, Params, PathSeg, PathSegs, TyPat, TyPatKind,
+            Block, Fn, Ident, Item, ItemKind, Local, Mutability, Params, PathSeg, PathSegs, TyPat,
+            TyPatKind, Vis,
         },
         intern_all,
     };
@@ -360,21 +431,25 @@ mod tests {
 
         assert_eq!(
             Stmt {
-                kind: StmtKind::Fn(Box::new(Fn {
-                    ident: Ident {
-                        name: name_sym,
-                        span: Span::new(3, 7)
-                    },
-                    params: Box::new(Params {
-                        items: thin_vec![],
-                        trailing: false,
-                        span: Span::new(7, 9),
-                    }),
-                    block,
-                    ret_ty: Some(Box::new(TyPat {
-                        kind: TyPatKind::Unit,
-                        span: Span::new(13, 15),
-                    }))
+                kind: StmtKind::Item(Box::new(Item {
+                    vis: Vis::Default,
+                    kind: ItemKind::Fn(Box::new(Fn {
+                        ident: Ident {
+                            name: name_sym,
+                            span: Span::new(3, 7)
+                        },
+                        params: Box::new(Params {
+                            items: thin_vec![],
+                            trailing: false,
+                            span: Span::new(7, 9),
+                        }),
+                        block,
+                        ret_ty: Some(Box::new(TyPat {
+                            kind: TyPatKind::Unit,
+                            span: Span::new(13, 15),
+                        }))
+                    })),
+                    span: Span::new(0, 36),
                 })),
                 span: Span::new(0, 36),
             },
