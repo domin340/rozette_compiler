@@ -88,6 +88,13 @@ impl Path {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Item {
+    pub vis: Vis,
+    pub kind: ItemKind,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExprKind {
     Lit(Lit),
     /// Binary operation (`a + 2`)
@@ -112,7 +119,7 @@ pub enum ExprKind {
     Path(Path),
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mutability(pub bool);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -149,12 +156,17 @@ pub struct UseTree {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum StmtKind {
+pub enum ItemKind {
     Use(Box<UseTree>),
     Fn(Box<Fn>),
     Const(Box<Local>),
-    Let(Box<Local>),
     Static(Box<Local>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StmtKind {
+    Item(Box<Item>),
+    Let(Box<Local>),
     Semi(Box<Expr>),
     Expr(Box<Expr>),
 }
@@ -166,12 +178,26 @@ pub struct Local {
     pub val: Option<Box<Expr>>,
 }
 
-// /// Visibility
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub enum Vis {
-//     File,
-//     Pub,
-// }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Vis {
+    /// By default he visibility is private to file.
+    Default,
+    /// Just (`pub`)
+    Pub,
+    /// Public with optional modifier
+    /// ```txt
+    /// (`pub(in crate::lexer)`)
+    ///   ^^^ ^-------------^
+    ///   Pub Vis::Restricted
+    /// ```
+    Restricted {
+        path: Box<Path>,
+        /// Spans the entire `Restricted` visiblity
+        span: Span,
+        /// e.g.: (`pub(crate)`)
+        shorthard: bool,
+    },
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Block {
@@ -190,7 +216,6 @@ pub struct Params {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fn {
-    // pub vis: Vis,
     pub ident: Ident,
     pub params: Box<Params>,
     pub block: Block,
