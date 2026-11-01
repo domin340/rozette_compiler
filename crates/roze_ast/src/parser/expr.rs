@@ -1,14 +1,6 @@
-use std::debug_assert_matches;
-
-use crate::{
-    BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp,
-    ast_decl::{Path, PathSeg, PathSegs},
-    parser::{Parser, span},
-};
+use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, ast_decl::Path, parser::Parser};
 use TokenKind::*;
-use roze_lexer::{Token, TokenKind};
-use roze_span::Span;
-use thin_vec::thin_vec;
+use roze_lexer::TokenKind;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Prec {
