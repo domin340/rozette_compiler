@@ -1,8 +1,8 @@
 use crate::{
     Pat, Stmt, StmtKind,
     ast_decl::{
-        Block, Fn, Item, ItemKind, Local, LocalItem, LocalItemKind, Mutability, Param, Params,
-        Path, PathSeg, PathSegs, UseTree, UseTreeSuf, Vis,
+        Block, Fn, Item, ItemKind, ItemsBlock, Local, LocalItem, LocalItemKind, Mod, ModBlock,
+        Mutability, Param, Params, Path, PathSeg, PathSegs, UseTree, UseTreeSuf, Vis,
     },
     parser::{Parser, span},
 };
@@ -129,16 +129,15 @@ impl Parser<'_> {
         let vis = self.parse_vis();
 
         let token = self.token();
+        self.advance();
+
         let kind = match token.kind {
             Use => {
-                self.advance();
                 let tree = self.parse_use_tree();
                 self.expect(Semi);
                 ItemKind::Use(tree.into())
             }
             kw @ (Static | Const) => {
-                self.advance();
-
                 let kind = match kw {
                     Static => {
                         let mutability = Mutability(self.check(Mut));
@@ -165,9 +164,26 @@ impl Parser<'_> {
                     val,
                 }))
             }
-            Fn => {
-                self.advance();
+            Mod => {
+                self.expect(Ident);
+                let ident = self.parse_ident(&self.prev);
 
+                let mod_item = if self.check(LCurly) {
+                    self.expect(LCurly);
+                    let start = self.prev.start;
+
+                    let items = self.parse_brace_terminated(Self::parse_item);
+                    let span = self.record_span(start);
+
+                    let block = ItemsBlock { items, span };
+                    Mod::Block(Box::new(ModBlock { ident, block }))
+                } else {
+                    Mod::Include(ident)
+                };
+
+                ItemKind::Mod(mod_item)
+            }
+            Fn => {
                 let name_token = self.token();
                 self.expect(Ident);
 
@@ -199,7 +215,7 @@ impl Parser<'_> {
 
     pub(crate) fn can_begin_item(&self) -> bool {
         match self.token().kind {
-            Pub | Use | Fn | Const | Static => true,
+            Pub | Use | Fn | Const | Static | Mod => true,
             _ => false,
         }
     }
@@ -272,20 +288,22 @@ impl Parser<'_> {
         Param { pat, ty }
     }
 
-    pub(crate) fn parse_stmt_block(&mut self) -> Block {
-        let span_start = self.token().start;
+    fn parse_stmt_block(&mut self) -> Block {
         self.expect(LCurly);
+        let start = self.prev.start;
+        let stmts = self.parse_brace_terminated(Self::parse_stmt);
+        let span = self.record_span(start);
+        Block { stmts, span }
+    }
 
-        let mut stmts = ThinVec::new();
+    fn parse_brace_terminated<T>(&mut self, mut f: impl FnMut(&mut Self) -> T) -> ThinVec<T> {
+        let mut items = ThinVec::new();
         while !matches!(self.token().kind, Eof | RCurly) {
-            stmts.push(self.parse_stmt());
+            items.push(f(self));
         }
 
-        // second check is done to return error when it's eof instead of right curly
         self.expect(RCurly);
-
-        let span = self.record_span(span_start);
-        Block { stmts, span }
+        items
     }
 }
 
