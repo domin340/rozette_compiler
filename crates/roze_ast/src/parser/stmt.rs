@@ -177,16 +177,16 @@ impl Parser<'_> {
                 let ident = self.parse_ident(&self.prev);
 
                 self.expect(Colon);
-                let ty = self.parse_ty_pat();
+                let ty = Box::new(self.parse_ty_pat());
 
                 self.expect(Eq);
-                let val = self.parse_expr();
+                let val = Box::new(self.parse_expr());
 
                 ItemKind::Local(Box::new(LocalItem {
                     kind,
                     ident,
-                    ty: ty.into(),
-                    val: val.into(),
+                    ty,
+                    val,
                     span: self.record_span(start),
                 }))
             }
