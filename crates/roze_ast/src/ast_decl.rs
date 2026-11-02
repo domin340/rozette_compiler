@@ -155,12 +155,26 @@ pub struct UseTree {
     pub span: Span,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LocalItemKind {
+    Static(Mutability),
+    Const,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalItem {
+    pub kind: LocalItemKind,
+    pub ident: Ident,
+    pub ty: Box<TyPat>,
+    pub val: Box<Expr>,
+    pub span: Span,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ItemKind {
     Use(Box<UseTree>),
     Fn(Box<Fn>),
-    Const(Box<Local>),
-    Static(Box<Local>),
+    Local(Box<LocalItem>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

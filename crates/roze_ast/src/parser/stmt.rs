@@ -1,8 +1,8 @@
 use crate::{
     Pat, Stmt, StmtKind,
     ast_decl::{
-        Block, Fn, Item, ItemKind, Local, Param, Params, Path, PathSeg, PathSegs, UseTree,
-        UseTreeSuf, Vis,
+        Block, Fn, Item, ItemKind, Local, LocalItem, LocalItemKind, Mutability, Param, Params,
+        Path, PathSeg, PathSegs, UseTree, UseTreeSuf, Vis,
     },
     parser::{Parser, span},
 };
@@ -164,13 +164,31 @@ impl Parser<'_> {
             kw @ (Static | Const) => {
                 self.advance();
 
-                let local = Box::new(self.parse_local());
+                let kind = match kw {
+                    Static => {
+                        let mutability = Mutability(self.check(Mut));
+                        LocalItemKind::Static(mutability)
+                    }
+                    Const => LocalItemKind::Const,
+                    _ => unreachable!("`kw` doesn't guard case {kw}"),
+                };
 
-                match kw {
-                    Static => ItemKind::Static(local),
-                    Const => ItemKind::Const(local),
-                    _ => unreachable!("`kw` doesn't guard all cases. Found {kw}"),
-                }
+                self.expect(Ident);
+                let ident = self.parse_ident(&self.prev);
+
+                self.expect(Colon);
+                let ty = self.parse_ty_pat();
+
+                self.expect(Eq);
+                let val = self.parse_expr();
+
+                ItemKind::Local(Box::new(LocalItem {
+                    kind,
+                    ident,
+                    ty: ty.into(),
+                    val: val.into(),
+                    span: self.record_span(start),
+                }))
             }
             Fn => {
                 self.advance();
