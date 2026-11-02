@@ -141,7 +141,7 @@ pub enum TyPatKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UseTreeSuf {
     /// (`as my_renamed`)
-    As(Span, Ident),
+    As(Ident, Span),
     /// (`::{Hello, World}`)
     Nested(ThinVec<UseTree>, Span),
     /// (`::*`)
@@ -152,7 +152,6 @@ pub enum UseTreeSuf {
 pub struct UseTree {
     pub pref: Path,
     pub suf: Option<UseTreeSuf>,
-    pub span: Span,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -167,14 +166,17 @@ pub struct LocalItem {
     pub ident: Ident,
     pub ty: Box<TyPat>,
     pub val: Box<Expr>,
-    pub span: Span,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModItem(Ident, Option<Block>);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ItemKind {
     Use(Box<UseTree>),
     Fn(Box<Fn>),
     Local(Box<LocalItem>),
+    Mod(Box<ModItem>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

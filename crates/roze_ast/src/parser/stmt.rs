@@ -71,8 +71,8 @@ impl Parser<'_> {
                 self.advance();
                 self.expect(Ident);
                 Some(UseTreeSuf::As(
-                    Span::new(suf_token.start, self.prev.end),
                     self.parse_ident(&self.prev),
+                    Span::new(suf_token.start, self.prev.end),
                 ))
             }
             Asterisk if trailing_colon => {
@@ -97,8 +97,7 @@ impl Parser<'_> {
 
         self.expect(Semi);
 
-        let span = self.record_span(pref.span().start);
-        UseTree { pref, suf, span }
+        UseTree { pref, suf }
     }
 
     fn parse_vis(&mut self) -> Vis {
@@ -164,7 +163,6 @@ impl Parser<'_> {
                     ident,
                     ty,
                     val,
-                    span: self.record_span(start),
                 }))
             }
             Fn => {
