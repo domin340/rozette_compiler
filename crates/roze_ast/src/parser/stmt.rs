@@ -125,30 +125,6 @@ impl Parser<'_> {
         }
     }
 
-    /// Parses the inner body of the local.
-    /// Captures: Pattern, optionally Type Pattern and Expression.
-    /// (`<pat>(: <ty_pat>)? (= <expr>)?`)
-    /// Used after keywords to declare variables, constants and static variables.
-    fn parse_local(&mut self) -> Local {
-        let pat: Box<Pat> = self.parse_pat().into();
-
-        let ty = if self.check(Colon) {
-            Some(Box::new(self.parse_ty_pat()))
-        } else {
-            None
-        };
-
-        let val = if self.check(Eq) {
-            Some(Box::new(self.parse_expr()))
-        } else {
-            None
-        };
-
-        self.expect(Semi);
-
-        Local { pat, ty, val }
-    }
-
     fn parse_item(&mut self) -> Item {
         let start = self.token().start;
         let vis = self.parse_vis();
@@ -182,6 +158,7 @@ impl Parser<'_> {
                 self.expect(Eq);
                 let val = Box::new(self.parse_expr());
 
+                self.expect(Semi);
                 ItemKind::Local(Box::new(LocalItem {
                     kind,
                     ident,
@@ -236,8 +213,22 @@ impl Parser<'_> {
             _ if self.can_begin_item() => StmtKind::Item(self.parse_item().into()),
             Let => {
                 self.advance(); // the keyword
-                let local = self.parse_local();
-                StmtKind::Let(Box::new(local))
+                let pat: Box<Pat> = self.parse_pat().into();
+
+                let ty = if self.check(Colon) {
+                    Some(Box::new(self.parse_ty_pat()))
+                } else {
+                    None
+                };
+
+                let val = if self.check(Eq) {
+                    Some(Box::new(self.parse_expr()))
+                } else {
+                    None
+                };
+
+                self.expect(Semi);
+                StmtKind::Let(Box::new(Local { pat, ty, val }))
             }
             _ => {
                 let expr = self.parse_expr().into();
