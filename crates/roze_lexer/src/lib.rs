@@ -50,7 +50,9 @@ impl<'source> Lexer<'source> {
         debug_assert!(n > 0 && s.len() >= n);
 
         #[cfg(debug_assertions)]
-        {}
+        {
+            self.prev = s[n - 1..].chars().next();
+        }
 
         self.chars = s[n..].chars();
     }
@@ -187,8 +189,7 @@ impl<'source> Lexer<'source> {
             match self.first() {
                 EOF | '\r' | '\n' => break false,
                 '\\' => {
-                    self.bump();
-                    self.bump();
+                    self.skip_n(2);
                 }
                 c => {
                     self.bump();
