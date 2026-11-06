@@ -161,24 +161,24 @@ impl Parser<'_> {
     pub(crate) fn parse_expr(&mut self) -> Expr {
         let start_token = self.token();
 
-        match start_token.kind {
+        let expr = match start_token.kind {
             Return => {
                 self.advance();
                 let kind = ExprKind::Ret(self.try_parse_expr());
                 let span = self.record_span(start_token.start);
-                Expr { kind, span }
+                return Expr { kind, span };
             }
             Break => {
                 self.advance();
                 let kind = ExprKind::Break(self.try_parse_expr());
                 let span = self.record_span(start_token.start);
-                Expr { kind, span }
+                return Expr { kind, span };
             }
             Continue => {
                 self.advance();
                 let kind = ExprKind::Continue();
                 let span = self.record_span(start_token.start);
-                Expr { kind, span }
+                return Expr { kind, span };
             }
             // (RangeTo and RangeToInclusive) range expressions
             //  ^^ HalfOpen ^^ Closed
@@ -194,32 +194,30 @@ impl Parser<'_> {
 
                 let kind = ExprKind::Range(None, self.try_parse_expr(), range_kind);
                 let span = self.record_span(start_token.start);
-                Expr { kind, span }
+                return Expr { kind, span };
             }
-            _ => {
-                let expr = self.parse_pratt(Prec::Lowest);
+            _ => self.parse_pratt(Prec::Lowest),
+        };
 
-                let token = self.token();
-                match token.kind {
-                    k @ (DotDot | DotDotEq) => {
-                        self.advance();
+        let suf_token = self.token(); // parse extra suffix
+        match suf_token.kind {
+            k @ (DotDot | DotDotEq) => {
+                self.advance();
 
-                        let range_kind = if k == DotDot {
-                            RangeKind::HalfOpen
-                        } else {
-                            RangeKind::Closed
-                        };
+                let range_kind = if k == DotDot {
+                    RangeKind::HalfOpen
+                } else {
+                    RangeKind::Closed
+                };
 
-                        let rhs = self.try_parse_expr();
+                let rhs = self.try_parse_expr();
 
-                        Expr {
-                            kind: ExprKind::Range(Some(expr.into()), rhs, range_kind),
-                            span: self.record_span(start_token.start),
-                        }
-                    }
-                    _ => expr,
+                Expr {
+                    kind: ExprKind::Range(Some(expr.into()), rhs, range_kind),
+                    span: self.record_span(start_token.start),
                 }
             }
+            _ => expr,
         }
     }
 }
