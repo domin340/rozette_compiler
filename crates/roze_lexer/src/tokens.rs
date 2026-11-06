@@ -40,8 +40,12 @@ pub enum TokenKind {
     Use,
     /// `const`
     Const,
+    /// `break`
+    Break,
     /// `static`
     Static,
+    /// `continue`
+    Continue,
     /// `mod`
     Mod,
     /// `as`
@@ -188,6 +192,7 @@ pub fn classify_ident(s: &str) -> TokenKind {
         5 => match s {
             "false" => False,
             "const" => Const,
+            "break" => Break,
             _ => Ident,
         },
         6 => match s {
@@ -195,6 +200,7 @@ pub fn classify_ident(s: &str) -> TokenKind {
             "static" => Static,
             _ => Ident,
         },
+        8 if s == "continue" => Continue,
         _ => Ident,
     }
 }
