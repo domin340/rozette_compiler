@@ -102,19 +102,18 @@ impl Parser<'_> {
 
     fn parse_vis(&mut self) -> Vis {
         if self.check(Pub) {
-            let start = self.prev.start;
             if self.check(LParen) {
-                let shorthard = !self.check(In);
+                let start = self.prev.start;
+
+                let shorthand = !self.check(In);
                 let path = Box::new(self.parse_path());
 
-                // the end of the restricted
                 self.expect(RParen);
-                let span = self.record_span(start);
 
                 Vis::Restricted {
                     path,
-                    span,
-                    shorthard,
+                    span: self.record_span(start),
+                    shorthand,
                 }
             } else {
                 Vis::Pub
@@ -169,7 +168,6 @@ impl Parser<'_> {
                 let ident = self.parse_ident(&self.prev);
 
                 let mod_item = if self.check(LCurly) {
-                    self.expect(LCurly);
                     let start = self.prev.start;
 
                     let items = self.parse_brace_terminated(Self::parse_item);
@@ -178,6 +176,7 @@ impl Parser<'_> {
                     let block = ItemsBlock { items, span };
                     Mod::Block(Box::new(ModBlock { ident, block }))
                 } else {
+                    self.expect(Semi);
                     Mod::Include(ident)
                 };
 
@@ -315,11 +314,60 @@ mod tests {
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
         ast_decl::{
-            Block, Fn, Ident, Item, ItemKind, Local, Mutability, Params, PathSeg, PathSegs, TyPat,
-            TyPatKind, Vis,
+            Block, Fn, Ident, Item, ItemKind, ItemsBlock, Local, Mod, ModBlock, Mutability, Params,
+            Path, PathSeg, PathSegs, TyPat, TyPatKind, Vis,
         },
         intern_all,
     };
+
+    #[test]
+    fn parse_mod_include() {
+        let (a_sym) = intern_all!("a");
+        let mut parser = Parser::new("mod a;");
+
+        assert_eq!(
+            Item {
+                vis: Vis::Default,
+                kind: ItemKind::Mod(Mod::Include(Ident {
+                    name: a_sym,
+                    span: Span::new(4, 5),
+                })),
+                span: Span::new(0, 6),
+            },
+            parser.parse_item(),
+        );
+    }
+
+    #[test]
+    fn parse_mod_block() {
+        let (crate_sym, hello_sym) = intern_all!("crate", "hello");
+        let mut parser = Parser::new("pub(in crate) mod hello {}");
+
+        assert_eq!(
+            Item {
+                vis: Vis::Restricted {
+                    path: Box::new(Path::Simple(Ident {
+                        name: crate_sym,
+                        span: Span::new(7, 12),
+                    })),
+                    span: Span::new(3, 13),
+                    shorthand: false
+                },
+                kind: ItemKind::Mod(Mod::Block(Box::new(ModBlock {
+                    ident: Ident {
+                        name: hello_sym,
+                        span: Span::new(18, 23),
+                    },
+                    block: ItemsBlock {
+                        items: thin_vec![],
+                        span: Span::new(24, 26),
+                    }
+                }))),
+                span: Span::new(0, 26),
+            },
+            parser.parse_item(),
+        );
+    }
 
     #[test]
     fn semi_and_semiless_expr() {
