@@ -1,9 +1,10 @@
-use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, parser::Parser};
+use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, ast_decl::RangeKind, parser::Parser};
 use TokenKind::*;
 use roze_lexer::TokenKind;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Prec {
+    Range,
     /// Call, tuple, index
     Grouping,
     Unary,
@@ -45,7 +46,7 @@ impl Parser<'_> {
                     _ => unreachable!("`unary` doesn't guard all cases"),
                 };
 
-                let rhs = self.parse_expr_in(Prec::Unary).into();
+                let rhs = self.parse_pratt(Prec::Unary).into();
                 ExprKind::Unary(op, rhs)
             }
             Str => ExprKind::Lit(self.parse_str_lit()),
@@ -68,8 +69,8 @@ impl Parser<'_> {
         }
     }
 
-    pub(crate) fn parse_expr_in(&mut self, min_prec: Prec) -> Expr {
-        let start_pos = self.token().start;
+    pub(crate) fn parse_pratt(&mut self, min_prec: Prec) -> Expr {
+        let start = self.token().start;
         let mut lhs = self.parse_lhs_expr();
 
         while let token = self.token()
@@ -96,10 +97,10 @@ impl Parser<'_> {
                         _ => unreachable!("`bin_op` doesn't goard all cases"),
                     };
 
-                    let rhs = self.parse_expr_in(this_prec);
+                    let rhs = self.parse_pratt(this_prec);
                     lhs = Expr {
                         kind: ExprKind::Binary(lhs.into(), bin_op, rhs.into()),
-                        span: self.record_span(start_pos),
+                        span: self.record_span(start),
                     }
                 }
                 k @ (PlusEq | MinusEq | AsteriskEq | SlashEq | PercentEq) => {
@@ -112,24 +113,24 @@ impl Parser<'_> {
                         _ => unreachable!("`compound_op` doesn't guard all cases"),
                     };
 
-                    let rhs = self.parse_expr_in(this_prec);
+                    let rhs = self.parse_pratt(this_prec);
                     lhs = Expr {
                         kind: ExprKind::Compound(lhs.into(), compound_op, rhs.into()),
-                        span: self.record_span(start_pos),
+                        span: self.record_span(start),
                     };
                 }
                 LParen => {
                     let (args, _) = self.parse_surrounded(Comma, RParen, Self::parse_expr);
                     lhs = Expr {
                         kind: ExprKind::Call(lhs.into(), args),
-                        span: self.record_span(start_pos),
+                        span: self.record_span(start),
                     };
                 }
                 Eq => {
-                    let rhs = self.parse_expr_in(this_prec);
+                    let rhs = self.parse_pratt(this_prec);
                     lhs = Expr {
                         kind: ExprKind::Assign(lhs.into(), rhs.into()),
-                        span: self.record_span(start_pos),
+                        span: self.record_span(start),
                     }
                 }
                 k => panic!("unsupported token {k} while parsing expression"),
@@ -158,16 +159,67 @@ impl Parser<'_> {
     }
 
     pub(crate) fn parse_expr(&mut self) -> Expr {
-        let token = self.token();
+        let start_token = self.token();
 
-        match token.kind {
+        match start_token.kind {
             Return => {
                 self.advance();
                 let kind = ExprKind::Ret(self.try_parse_expr());
-                let span = self.record_span(token.start);
+                let span = self.record_span(start_token.start);
                 Expr { kind, span }
             }
-            _ => self.parse_expr_in(Prec::Lowest),
+            Break => {
+                self.advance();
+                let kind = ExprKind::Break(self.try_parse_expr());
+                let span = self.record_span(start_token.start);
+                Expr { kind, span }
+            }
+            Continue => {
+                self.advance();
+                let kind = ExprKind::Continue();
+                let span = self.record_span(start_token.start);
+                Expr { kind, span }
+            }
+            // (RangeTo and RangeToInclusive) range expressions
+            //  ^^ HalfOpen ^^ Closed
+            // this block also parses RangeFull.
+            k @ (DotDot | DotDotEq) => {
+                self.advance();
+
+                let range_kind = if k == DotDot {
+                    RangeKind::HalfOpen
+                } else {
+                    RangeKind::Closed
+                };
+
+                let kind = ExprKind::Range(None, self.try_parse_expr(), range_kind);
+                let span = self.record_span(start_token.start);
+                Expr { kind, span }
+            }
+            _ => {
+                let expr = self.parse_pratt(Prec::Lowest);
+
+                let token = self.token();
+                match token.kind {
+                    k @ (DotDot | DotDotEq) => {
+                        self.advance();
+
+                        let range_kind = if k == DotDot {
+                            RangeKind::HalfOpen
+                        } else {
+                            RangeKind::Closed
+                        };
+
+                        let rhs = self.try_parse_expr();
+
+                        Expr {
+                            kind: ExprKind::Range(Some(expr.into()), rhs, range_kind),
+                            span: self.record_span(start_token.start),
+                        }
+                    }
+                    _ => expr,
+                }
+            }
         }
     }
 }
@@ -179,17 +231,112 @@ mod tests {
 
     use crate::{
         BinOp, Expr, ExprKind, Lit, Parser, UnaryOp,
-        ast_decl::{Ident, PathSeg, PathSegs},
+        ast_decl::{Ident, PathSeg, PathSegs, RangeKind},
         intern_all,
     };
 
     #[test]
-    fn parse_literals_and_ident() {
-        let hello = Symbol::intern("hello");
-        let decimal = Symbol::intern("12.3e+2");
-        let hex = Symbol::intern("0x3faFA");
-        let identifier = Symbol::intern("identifier");
+    fn parse_ranges() {
+        let one = intern_all!("1");
+        let mut parser = Parser::new("1..1 1..=1 1..; ..1; ..=1; ..");
 
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Range(
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(one)),
+                        span: Span::new(0, 1),
+                    })),
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(one)),
+                        span: Span::new(3, 4),
+                    })),
+                    RangeKind::HalfOpen
+                ),
+                span: Span::new(0, 4),
+            },
+            parser.parse_expr(),
+        );
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Range(
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(one)),
+                        span: Span::new(5, 6),
+                    })),
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(one)),
+                        span: Span::new(9, 10),
+                    })),
+                    RangeKind::Closed
+                ),
+                span: Span::new(5, 10),
+            },
+            parser.parse_expr(),
+        );
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Range(
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(one)),
+                        span: Span::new(11, 12),
+                    })),
+                    None,
+                    RangeKind::HalfOpen,
+                ),
+                span: Span::new(11, 14),
+            },
+            parser.parse_expr(),
+        );
+        parser.advance(); // Semi
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Range(
+                    None,
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(one)),
+                        span: Span::new(18, 19),
+                    })),
+                    RangeKind::HalfOpen,
+                ),
+                span: Span::new(16, 19),
+            },
+            parser.parse_expr(),
+        );
+        parser.advance(); // Semi
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Range(
+                    None,
+                    Some(Box::new(Expr {
+                        kind: ExprKind::Lit(Lit::Num(one)),
+                        span: Span::new(24, 25),
+                    })),
+                    RangeKind::Closed,
+                ),
+                span: Span::new(21, 25),
+            },
+            parser.parse_expr(),
+        );
+        parser.advance();
+
+        assert_eq!(
+            Expr {
+                kind: ExprKind::Range(None, None, RangeKind::HalfOpen),
+                span: Span::new(27, 29),
+            },
+            parser.parse_expr()
+        );
+    }
+
+    #[test]
+    fn parse_literals_and_ident() {
+        let (hello, decimal, hex, identifier) =
+            intern_all!("hello", "12.3e+2", "0x3faFA", "identifier");
         let mut parser = Parser::new(r#""hello" 12.3e+2 0x3faFA true false identifier"#);
 
         assert_eq!(
