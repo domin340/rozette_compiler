@@ -95,6 +95,12 @@ pub struct Item {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RangeKind {
+    HalfOpen,
+    Closed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExprKind {
     Lit(Lit),
     /// Binary operation (`a + 2`)
@@ -107,8 +113,13 @@ pub enum ExprKind {
     Assign(Box<Expr>, Box<Expr>),
     /// (`return 10`)
     Ret(Option<Box<Expr>>),
+    /// (`break <lifetime>? <expr>?`)
+    Break(Option<Box<Expr>>),
+    /// (`continue <lifetime>?`)
+    Continue(),
     /// (`my_expr as any`)
     Cast(Box<Expr>, Box<TyPat>),
+    Range(Option<Box<Expr>>, Option<Box<Expr>>, RangeKind),
     /// ```txt
     /// print("hello world!", "next")
     /// ^     ^               ^ second param in vec
@@ -229,7 +240,7 @@ pub enum Vis {
         /// Spans the entire `Restricted` visiblity
         span: Span,
         /// e.g.: (`pub(crate)`)
-        shorthard: bool,
+        shorthand: bool,
     },
 }
 
