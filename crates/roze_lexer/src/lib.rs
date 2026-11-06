@@ -45,6 +45,16 @@ impl<'source> Lexer<'source> {
         c.unwrap_or(EOF)
     }
 
+    fn skip_n(&mut self, n: usize) {
+        let s = self.as_str();
+        debug_assert!(n > 0 && s.len() >= n);
+
+        #[cfg(debug_assertions)]
+        {}
+
+        self.chars = s[n..].chars();
+    }
+
     fn first(&mut self) -> char {
         self.chars.clone().next().unwrap_or(EOF)
     }
@@ -65,12 +75,13 @@ impl<'source> Lexer<'source> {
         self.chars.as_str()
     }
 
-    #[inline(always)]
-    fn set_index_nth(&mut self, p: Option<usize>) {
-        self.chars = match p {
-            Some(index) => self.as_str()[index..].chars(),
-            None => "".chars(),
-        };
+    fn bump_index(&mut self, p: Option<usize>) {
+        if let Some(n) = p {
+            self.skip_n(n);
+        } else {
+            self.chars = "".chars();
+            self.prev = Some(EOF);
+        }
     }
 
     fn line_comment(&mut self) -> TokenKind {
@@ -96,7 +107,7 @@ impl<'source> Lexer<'source> {
         let idx = memchr::memchr_iter(b'*', bytes)
             .find(|&index| bytes.get(index + 1).copied().unwrap_or(0) == b'/')
             .map(|found_index| found_index + 2); // consume '*/'
-        self.set_index_nth(idx);
+        self.bump_index(idx);
 
         let closed = idx.is_some();
         TokenKind::Comment(if closed {
@@ -109,7 +120,7 @@ impl<'source> Lexer<'source> {
     fn eat_until_newline(&mut self) {
         let bytes = self.chars.as_str().as_bytes();
         let idx = memchr::memchr2(b'\r', b'\n', bytes);
-        self.set_index_nth(idx);
+        self.bump_index(idx);
     }
 
     fn eat_while(&mut self, p: impl Fn(char) -> bool) {
@@ -212,6 +223,17 @@ impl<'source> Lexer<'source> {
 
                 TokenKind::NewLine
             }
+            '.' => match (self.first(), self.second()) {
+                ('.', '=') => {
+                    self.skip_n(2);
+                    TokenKind::DotDotEq
+                }
+                ('.', _) => {
+                    self.bump();
+                    TokenKind::DotDot
+                }
+                _ => TokenKind::Dot,
+            },
             '[' => TokenKind::LBracket,
             ']' => TokenKind::RBracket,
             '(' => TokenKind::LParen,
@@ -373,6 +395,14 @@ mod tests {
             ],
             lex("+ += - -= * *= / /= % %= = == != !")
         )
+    }
+
+    #[test]
+    fn ranges_and_dot() {
+        assert_eq!(
+            vec!["DotDot(0,2)", "DotDotEq(3,6)", "Dot(7,8)"],
+            lex(".. ..= .")
+        );
     }
 
     #[test]

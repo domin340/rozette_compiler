@@ -120,6 +120,12 @@ pub enum TokenKind {
     Arrow,
     /// `::`
     ColonColon,
+    /// `.`
+    Dot,
+    /// `..`
+    DotDot,
+    /// `..=`
+    DotDotEq,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
