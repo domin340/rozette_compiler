@@ -71,7 +71,7 @@ impl<'source> Parser<'source> {
         let matches_token = token.kind == expected;
 
         if !matches_token {
-            panic!("expected {expected}, got {token}");
+            panic!("expected {expected}, got {}", token.kind);
         }
 
         self.advance(); // advance over the expected token
