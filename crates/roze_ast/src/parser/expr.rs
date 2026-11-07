@@ -1,6 +1,11 @@
-use crate::{BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp, ast_decl::RangeKind, parser::Parser};
+use crate::{
+    BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp,
+    ast_decl::{Ident, Label, RangeKind},
+    parser::Parser,
+};
 use TokenKind::*;
-use roze_lexer::TokenKind;
+use roze_lexer::{Token, TokenKind};
+use roze_span::{Span, Symbol};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Prec {
@@ -49,7 +54,7 @@ impl Parser<'_> {
                 let rhs = self.parse_pratt(Prec::Unary).into();
                 ExprKind::Unary(op, rhs)
             }
-            Str => ExprKind::Lit(self.parse_str_lit()),
+            Str { closed: _ } => ExprKind::Lit(self.parse_str_lit()),
             Num => ExprKind::Lit(self.parse_num_lit()),
             val @ (True | False) => {
                 self.advance();
@@ -144,7 +149,7 @@ impl Parser<'_> {
         match self.token().kind {
             Ident | ColonColon | // ident, path start
             LParen | LBracket | LCurly | Lt | // group
-            True | False | Str | OpenStr | Num | // literals
+            True | False | Str { closed: _ } | Num | // literals
             Exclamation | Minus => true, // unary
             _ => false,
         }
@@ -155,6 +160,27 @@ impl Parser<'_> {
             Some(self.parse_expr().into())
         } else {
             None
+        }
+    }
+
+    pub(crate) fn try_parse_label(&mut self) -> Option<Label> {
+        let token = self.token();
+        match self.token().kind {
+            Quote => panic!("`'` is not valid label. Try `'<ident>`."),
+            Lifetime { numeric } => {
+                if numeric {
+                    panic!("Labels cannot be numeric. Given numeric lifetime");
+                }
+
+                // take the identifier from lifetime
+                // `'hello`
+                //  ^ skip this single quote
+                let span = Span::new(token.start + 1, token.end);
+                let name = Symbol::intern(&self.s[span.clone()]);
+
+                Some(Label(Ident { name, span }))
+            }
+            _ => None,
         }
     }
 
@@ -170,13 +196,14 @@ impl Parser<'_> {
             }
             Break => {
                 self.advance();
-                let kind = ExprKind::Break(self.try_parse_expr());
+                let label = self.try_parse_label();
+                let kind = ExprKind::Break(label, self.try_parse_expr());
                 let span = self.record_span(start_token.start);
                 return Expr { kind, span };
             }
             Continue => {
                 self.advance();
-                let kind = ExprKind::Continue();
+                let kind = ExprKind::Continue(self.try_parse_label());
                 let span = self.record_span(start_token.start);
                 return Expr { kind, span };
             }
