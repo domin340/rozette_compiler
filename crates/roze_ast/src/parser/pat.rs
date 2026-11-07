@@ -23,7 +23,7 @@ impl Parser<'_> {
                 PatKind::Ident(m, self.parse_ident(&self.prev).into())
             }
             Underscore => PatKind::Discard,
-            _ => panic!("Unexpected token: {token} while parsing pattern"),
+            k => panic!("Unexpected token: {k} while parsing pattern"),
         };
 
         Pat {
@@ -50,9 +50,9 @@ impl Parser<'_> {
                     todo!("type tuple hasn't been implemented")
                 }
             }
-            _ => {
+            k => {
                 self.advance();
-                panic!("Unexpected token: {token} while parsing type pattern");
+                panic!("Unexpected token: {k} while parsing type pattern");
             }
         };
 
