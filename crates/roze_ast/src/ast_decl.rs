@@ -114,9 +114,9 @@ pub enum ExprKind {
     /// (`return 10`)
     Ret(Option<Box<Expr>>),
     /// (`break <lifetime>? <expr>?`)
-    Break(Option<Box<Expr>>),
+    Break(Option<Label>, Option<Box<Expr>>),
     /// (`continue <lifetime>?`)
-    Continue(),
+    Continue(Option<Label>),
     /// (`my_expr as any`)
     Cast(Box<Expr>, Box<TyPat>),
     Range(Option<Box<Expr>>, Option<Box<Expr>>, RangeKind),
@@ -132,6 +132,21 @@ pub enum ExprKind {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mutability(pub bool);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Label(pub Ident);
+
+impl From<Ident> for Label {
+    fn from(value: Ident) -> Self {
+        Self(value)
+    }
+}
+
+impl Label {
+    pub fn name(&self) -> &Ident {
+        &self.0
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatKind {
