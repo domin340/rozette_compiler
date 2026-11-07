@@ -132,7 +132,8 @@ pub enum TokenKind {
     DotDotEq,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// Token {{ kind: {kind}, start: {start}, end: {end} }}
+#[derive(displaydoc::Display, Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
     pub start: u32,
