@@ -90,7 +90,7 @@ impl<'source> Lexer<'source> {
         debug_assert_eq!((self.prev, self.first()), (Some('/'), '/'));
         self.bump(); // '/'
 
-        let com_kind = match self.first() {
+        let kind = match self.first() {
             '/' => CommentKind::Doc,
             '!' => CommentKind::File,
             _ => CommentKind::Line,
@@ -98,7 +98,7 @@ impl<'source> Lexer<'source> {
 
         self.eat_until_newline();
 
-        TokenKind::Comment(com_kind)
+        TokenKind::Comment(kind)
     }
 
     fn inline_comment(&mut self) -> TokenKind {
@@ -112,11 +112,8 @@ impl<'source> Lexer<'source> {
         self.bump_index(idx);
 
         let closed = idx.is_some();
-        TokenKind::Comment(if closed {
-            CommentKind::Inline
-        } else {
-            CommentKind::OpenInline
-        })
+
+        TokenKind::Comment(CommentKind::Inline { closed })
     }
 
     fn eat_until_newline(&mut self) {
@@ -182,29 +179,39 @@ impl<'source> Lexer<'source> {
         TokenKind::Num
     }
 
-    fn string(&mut self, quote: char) -> TokenKind {
-        debug_assert!(matches!(quote, '"' | '\''));
+    fn string(&mut self) -> TokenKind {
+        // strings can only be created with double quotes
+        const QUOTE: char = '"';
 
         let closed = loop {
+            // don't stop at new line,
+            // this is still a part of double quote string.
             match self.first() {
-                EOF | '\r' | '\n' => break false,
-                '\\' => {
-                    self.skip_n(2);
-                }
-                c => {
+                EOF => break false,
+                '\\' => self.skip_n(2), // skip this and one after it
+                c if c == QUOTE => {
                     self.bump();
-
-                    if c == quote {
-                        break true;
-                    }
+                    break true;
+                }
+                _ => {
+                    self.bump();
                 }
             }
         };
 
-        if closed {
-            TokenKind::Str
-        } else {
-            TokenKind::OpenStr
+        TokenKind::Str { closed }
+    }
+
+    fn single_quote(&mut self) -> TokenKind {
+        debug_assert_eq!(self.prev, Some('\''));
+
+        match self.first() {
+            c if is_ident_continue(c) => {
+                let numeric = c.is_ascii_digit();
+                self.eat_ident_continue();
+                TokenKind::Lifetime { numeric }
+            }
+            _ => TokenKind::Quote,
         }
     }
 
@@ -218,8 +225,7 @@ impl<'source> Lexer<'source> {
             ',' => TokenKind::Comma,
             c @ ('\r' | '\n') => {
                 if c == '\r' && self.first() == '\n' {
-                    // skip windows new line style
-                    self.bump();
+                    self.bump(); // skip windows new line style
                 }
 
                 TokenKind::NewLine
@@ -310,7 +316,8 @@ impl<'source> Lexer<'source> {
                 TokenKind::PipePipe
             }
             digit @ ('0'..='9') => self.number(digit),
-            quote @ ('\'' | '"') => self.string(quote),
+            '\'' => self.single_quote(),
+            '"' => self.string(),
             c if is_ident_start(c) => {
                 self.eat_ident_continue();
                 let s = &self.s[start..self.pos()];
@@ -341,35 +348,55 @@ pub fn iter(s: &str) -> impl Iterator<Item = Token> {
 
 #[cfg(test)]
 mod tests {
-    fn lex(s: &str) -> Vec<String> {
-        super::iter(s).map(|t| format!("{t}")).collect()
+    use crate::{
+        CommentKind, Token,
+        TokenKind::{self, *},
+    };
+
+    fn lex(s: &str) -> Vec<Token> {
+        super::iter(s).collect()
+    }
+
+    #[inline]
+    fn token(kind: TokenKind, start: u32, end: u32) -> Token {
+        Token { kind, start, end }
     }
 
     #[test]
     fn strings() {
         assert_eq!(
             vec![
-                "Str(0,16)",
-                "Str(17,40)",
-                "OpenStr(41,53)",
-                "NewLine(53,54)",
-                "OpenStr(54,75)"
+                token(Str { closed: true }, 0, 19),
+                token(Str { closed: true }, 20, 34),
+                token(Str { closed: false }, 35, 36),
             ],
-            lex(r#"'Hello World \'' "double 'single' quote" "hello world
-'another unterminated"#),
+            lex(r#""hello world \' \"" "
+hello world" ""#),
         );
+    }
+
+    #[test]
+    fn single_quote() {
+        assert_eq!(
+            vec![
+                token(Lifetime { numeric: false }, 0, 6),
+                token(Lifetime { numeric: true }, 7, 10),
+                token(Quote, 11, 12),
+            ],
+            lex("'hello '12 '")
+        )
     }
 
     #[test]
     fn numbers() {
         assert_eq!(
             vec![
-                "Num(0,6)",
-                "Num(7,11)",
-                "Num(12,17)",
-                "Num(18,19)",
-                "Num(20,23)",
-                "Num(24,31)",
+                token(Num, 0, 6),
+                token(Num, 7, 11),
+                token(Num, 12, 17),
+                token(Num, 18, 19),
+                token(Num, 20, 23),
+                token(Num, 24, 31),
             ],
             lex("0x1f01 2e+2 0aaaa 0 0e2 0.2E-53"),
         );
@@ -379,20 +406,20 @@ mod tests {
     fn compounds_and_symbols() {
         assert_eq!(
             vec![
-                "Plus(0,1)",
-                "PlusEq(2,4)",
-                "Minus(5,6)",
-                "MinusEq(7,9)",
-                "Asterisk(10,11)",
-                "AsteriskEq(12,14)",
-                "Slash(15,16)",
-                "SlashEq(17,19)",
-                "Percent(20,21)",
-                "PercentEq(22,24)",
-                "Eq(25,26)",
-                "EqEq(27,29)",
-                "NotEq(30,32)",
-                "Exclamation(33,34)",
+                token(Plus, 0, 1),
+                token(PlusEq, 2, 4),
+                token(Minus, 5, 6),
+                token(MinusEq, 7, 9),
+                token(Asterisk, 10, 11),
+                token(AsteriskEq, 12, 14),
+                token(Slash, 15, 16),
+                token(SlashEq, 17, 19),
+                token(Percent, 20, 21),
+                token(PercentEq, 22, 24),
+                token(Eq, 25, 26),
+                token(EqEq, 27, 29),
+                token(NotEq, 30, 32),
+                token(Exclamation, 33, 34),
             ],
             lex("+ += - -= * *= / /= % %= = == != !")
         )
@@ -401,7 +428,7 @@ mod tests {
     #[test]
     fn ranges_and_dot() {
         assert_eq!(
-            vec!["DotDot(0,2)", "DotDotEq(3,6)", "Dot(7,8)"],
+            vec![token(DotDot, 0, 2), token(DotDotEq, 3, 6), token(Dot, 7, 8)],
             lex(".. ..= .")
         );
     }
@@ -410,11 +437,11 @@ mod tests {
     fn line_comments() {
         assert_eq!(
             vec![
-                "LineComment(0,14)",
-                "NewLine(14,15)",
-                "DocComment(15,30)",
-                "NewLine(30,31)",
-                "FileComment(31,47)",
+                token(Comment(CommentKind::Line), 0, 14),
+                token(NewLine, 14, 15),
+                token(Comment(CommentKind::Doc), 15, 30),
+                token(NewLine, 30, 31),
+                token(Comment(CommentKind::File), 31, 47),
             ],
             lex(r#"// hello world
 /// doc comment
@@ -426,9 +453,9 @@ mod tests {
     fn inline_comments() {
         assert_eq!(
             vec![
-                "InlineComment(0,22)",
-                "InlineComment(23,35)",
-                "OpenInlineComment(36,51)"
+                token(Comment(CommentKind::Inline { closed: true }), 0, 22),
+                token(Comment(CommentKind::Inline { closed: true }), 23, 35),
+                token(Comment(CommentKind::Inline { closed: false }), 36, 51),
             ],
             lex(r#"/*
 block /* nothing */ /* inline */ /* unterminated"#)

@@ -7,9 +7,7 @@ pub enum CommentKind {
     /// <line_comment>
     Line,
     /// <inline_comment>
-    Inline,
-    /// <open_inline_comment>
-    OpenInline,
+    Inline { closed: bool },
 }
 
 #[derive(displaydoc::Display, Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,9 +57,11 @@ pub enum TokenKind {
     /// <num>
     Num,
     /// <str>
-    Str,
-    /// <open_str>
-    OpenStr,
+    Str { closed: bool },
+    /// <quote>
+    Quote, // doesn't have any real use atm
+    /// <lifetime>
+    Lifetime { numeric: bool },
     /// `true`
     True,
     /// `false`
@@ -145,17 +145,6 @@ impl Token {
         start: u32::MAX,
         end: u32::MAX,
     };
-}
-
-impl std::fmt::Display for Token {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.kind {
-            TokenKind::Comment(c) => write!(f, "{c:?}Comment")?,
-            kind => write!(f, "{kind:?}")?,
-        }
-
-        write!(f, "({},{})", self.start, self.end)
-    }
 }
 
 pub fn is_ident_start(c: char) -> bool {
