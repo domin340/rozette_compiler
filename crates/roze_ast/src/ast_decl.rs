@@ -84,16 +84,18 @@ pub struct Item {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RangeKind {
-    HalfOpen,
-    Closed,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct If {
     pub cond: Box<Expr>,
     pub blk: Box<Block>,
     pub else_blk: Option<Box<Block>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ForLoop {
+    pub label: Option<Label>,
+    pub pat: Box<Pat>,
+    pub iter: Box<Expr>,
+    pub blk: Block,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -117,6 +119,7 @@ pub enum ExprKind {
     Cast(Box<Expr>, Box<TyPat>),
     Range(Option<Box<Expr>>, Option<Box<Expr>>, RangeKind),
     If(If),
+    For(Box<ForLoop>),
     /// ```txt
     /// print("hello world!", "next")
     /// ^     ^               ^ second param in vec
@@ -125,6 +128,12 @@ pub enum ExprKind {
     /// ```
     Call(Box<Expr>, ThinVec<Expr>),
     Path(Path),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RangeKind {
+    HalfOpen,
+    Closed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
