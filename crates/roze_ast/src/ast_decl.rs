@@ -62,27 +62,16 @@ pub struct PathSeg {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PathSegs(pub ThinVec<PathSeg>);
-
-impl From<PathSegs> for Path {
-    fn from(value: PathSegs) -> Self {
-        Self::Segs(value)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Path {
     Simple(Ident),
-    Segs(PathSegs),
+    Segs(ThinVec<PathSeg>),
 }
 
 impl Path {
     pub fn span(&self) -> Span {
         match self {
             Self::Simple(ident) => ident.span.clone(),
-            Self::Segs(PathSegs(segs)) => {
-                Span::new(segs[0].span.start, segs.last().unwrap().span.end)
-            }
+            Self::Segs(segs) => Span::new(segs[0].span.start, segs.last().unwrap().span.end),
         }
     }
 }

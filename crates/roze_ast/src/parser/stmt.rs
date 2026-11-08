@@ -2,7 +2,7 @@ use crate::{
     Pat, Stmt, StmtKind,
     ast_decl::{
         Block, Fn, Item, ItemKind, ItemsBlock, Local, LocalItem, LocalItemKind, Mod, ModBlock,
-        Mutability, Param, Params, Path, PathSeg, PathSegs, UseTree, UseTreeSuf, Vis,
+        Mutability, Param, Params, Path, PathSeg, UseTree, UseTreeSuf, Vis,
     },
     parser::{Parser, span},
 };
@@ -59,7 +59,7 @@ impl Parser<'_> {
             });
         }
 
-        (PathSegs(segs).into(), trailing_colon)
+        (Path::Segs(segs), trailing_colon)
     }
 
     fn parse_use_tree(&mut self) -> UseTree {
@@ -315,7 +315,7 @@ mod tests {
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
         ast_decl::{
             Block, Fn, Ident, Item, ItemKind, ItemsBlock, Local, Mod, ModBlock, Mutability, Params,
-            Path, PathSeg, PathSegs, TyPat, TyPatKind, Vis,
+            Path, PathSeg, TyPat, TyPatKind, Vis,
         },
         intern_all,
     };
@@ -546,16 +546,13 @@ mod tests {
                         span: Span::new(4, 5),
                     }),
                     ty: Some(Box::new(TyPat {
-                        kind: TyPatKind::Path(
-                            PathSegs(thin_vec![PathSeg {
-                                ident: Ident {
-                                    name: number,
-                                    span: Span::new(9, 15)
-                                },
-                                span: Span::new(7, 15),
-                            }])
-                            .into()
-                        ),
+                        kind: TyPatKind::Path(Path::Segs(thin_vec![PathSeg {
+                            ident: Ident {
+                                name: number,
+                                span: Span::new(9, 15)
+                            },
+                            span: Span::new(7, 15),
+                        }])),
                         span: Span::new(7, 15)
                     })),
                     val: None,
