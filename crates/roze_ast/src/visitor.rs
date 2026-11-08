@@ -37,7 +37,43 @@ pub trait Visitor: Sized {
     }
 
     fn visit_expr(&mut self, expr: &Expr) {
-        visit_expr(self, expr)
+        match &expr.kind {
+            ExprKind::Assign(lhs, rhs) => {
+                self.visit_expr(lhs);
+                self.visit_expr(rhs)
+            }
+            ExprKind::Binary(lhs, _, rhs) => {
+                self.visit_expr(lhs);
+                self.visit_expr(rhs)
+            }
+            ExprKind::Break(label, val) => {
+                visit_opt!(self.visit_label(label));
+                visit_opt!(self.visit_expr(val))
+            }
+            ExprKind::Call(lhs, more) => {
+                self.visit_expr(lhs);
+                visit_list!(self.visit_expr(more))
+            }
+            ExprKind::Cast(lhs, ty) => {
+                self.visit_expr(lhs);
+                self.visit_ty_pat(ty)
+            }
+            ExprKind::Compound(lhs, _, rhs) => {
+                self.visit_expr(lhs);
+                self.visit_expr(rhs)
+            }
+            ExprKind::Continue(label) => visit_opt!(self.visit_label(label)),
+            ExprKind::For(for_loop) => self.visit_for_loop(for_loop),
+            ExprKind::If(if_expr) => self.visit_if(if_expr),
+            ExprKind::Lit(lit) => self.visit_lit(lit),
+            ExprKind::Path(path) => self.visit_path(path),
+            ExprKind::Range(lhs, rhs, _) => {
+                visit_opt!(self.visit_expr(lhs));
+                visit_opt!(self.visit_expr(rhs))
+            }
+            ExprKind::Ret(val) => visit_opt!(self.visit_expr(val)),
+            ExprKind::Unary(_, rhs) => self.visit_expr(rhs),
+        }
     }
 
     fn visit_pat(&mut self, pat: &Pat) {
@@ -161,45 +197,5 @@ pub trait Visitor: Sized {
 
     fn visit_items_blk(&mut self, blk: &ItemsBlock) {
         visit_list!(self.visit_item(&blk.items))
-    }
-}
-
-fn visit_expr<V: Visitor>(vis: &mut V, expr: &Expr) {
-    match &expr.kind {
-        ExprKind::Assign(lhs, rhs) => {
-            vis.visit_expr(lhs);
-            vis.visit_expr(rhs)
-        }
-        ExprKind::Binary(lhs, _, rhs) => {
-            vis.visit_expr(lhs);
-            vis.visit_expr(rhs)
-        }
-        ExprKind::Break(label, val) => {
-            visit_opt!(vis.visit_label(label));
-            visit_opt!(vis.visit_expr(val))
-        }
-        ExprKind::Call(lhs, more) => {
-            vis.visit_expr(lhs);
-            visit_list!(vis.visit_expr(more))
-        }
-        ExprKind::Cast(lhs, ty) => {
-            vis.visit_expr(lhs);
-            vis.visit_ty_pat(ty)
-        }
-        ExprKind::Compound(lhs, _, rhs) => {
-            vis.visit_expr(lhs);
-            vis.visit_expr(rhs)
-        }
-        ExprKind::Continue(label) => visit_opt!(vis.visit_label(label)),
-        ExprKind::For(for_loop) => vis.visit_for_loop(for_loop),
-        ExprKind::If(if_expr) => vis.visit_if(if_expr),
-        ExprKind::Lit(lit) => vis.visit_lit(lit),
-        ExprKind::Path(path) => vis.visit_path(path),
-        ExprKind::Range(lhs, rhs, _) => {
-            visit_opt!(vis.visit_expr(lhs));
-            visit_opt!(vis.visit_expr(rhs))
-        }
-        ExprKind::Ret(val) => visit_opt!(vis.visit_expr(val)),
-        ExprKind::Unary(_, rhs) => vis.visit_expr(rhs),
     }
 }
