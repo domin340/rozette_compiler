@@ -90,6 +90,13 @@ pub enum RangeKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct If {
+    pub cond: Box<Expr>,
+    pub blk: Box<Block>,
+    pub else_blk: Option<Box<Block>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExprKind {
     Lit(Lit),
     /// Binary operation (`a + 2`)
@@ -109,6 +116,7 @@ pub enum ExprKind {
     /// (`my_expr as any`)
     Cast(Box<Expr>, Box<TyPat>),
     Range(Option<Box<Expr>>, Option<Box<Expr>>, RangeKind),
+    If(If),
     /// ```txt
     /// print("hello world!", "next")
     /// ^     ^               ^ second param in vec
