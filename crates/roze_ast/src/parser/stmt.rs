@@ -28,7 +28,7 @@ impl Parser<'_> {
         let start = self.token();
         if start.kind == Ident && self.stream.nth(1).kind != ColonColon {
             self.advance();
-            return (Path::Simple(self.parse_ident(&start)), false);
+            return (Path::Simple(self.intern_ident(&start)), false);
         }
 
         let mut segs = thin_vec![];
@@ -36,7 +36,7 @@ impl Parser<'_> {
         if start.kind == Ident {
             self.advance();
             segs.push(PathSeg {
-                ident: self.parse_ident(&start),
+                ident: self.intern_ident(&start),
                 span: span(&start),
             });
         }
@@ -54,7 +54,7 @@ impl Parser<'_> {
             }
 
             segs.push(PathSeg {
-                ident: self.parse_ident(&self.prev),
+                ident: self.intern_ident(&self.prev),
                 span: Span::new(token.start, self.prev.end),
             });
         }
@@ -69,11 +69,9 @@ impl Parser<'_> {
         let suf = match suf_token.kind {
             As => {
                 self.advance();
-                self.expect(Ident);
-                Some(UseTreeSuf::As(
-                    self.parse_ident(&self.prev),
-                    Span::new(suf_token.start, self.prev.end),
-                ))
+                let ident = self.parse_ident();
+                let span = Span::new(suf_token.start, self.prev.end);
+                Some(UseTreeSuf::As(ident, span))
             }
             Asterisk if trailing_colon => {
                 let start = self.prev.start; // ColonColon token
@@ -146,9 +144,7 @@ impl Parser<'_> {
                     _ => unreachable!("`kw` doesn't guard case {kw}"),
                 };
 
-                self.expect(Ident);
-                let ident = self.parse_ident(&self.prev);
-
+                let ident = self.parse_ident();
                 self.expect(Colon);
                 let ty = Box::new(self.parse_ty_pat());
 
@@ -164,8 +160,7 @@ impl Parser<'_> {
                 }))
             }
             Mod => {
-                self.expect(Ident);
-                let ident = self.parse_ident(&self.prev);
+                let ident = self.parse_ident();
 
                 let mod_item = if self.check(LCurly) {
                     let start = self.prev.start;
@@ -183,10 +178,8 @@ impl Parser<'_> {
                 ItemKind::Mod(mod_item)
             }
             Fn => {
-                let name_token = self.token();
-                self.expect(Ident);
-
-                let params = self.parse_fn_item_params();
+                let ident = self.parse_ident();
+                let params = Box::new(self.parse_fn_item_params());
 
                 // `-> number`
                 let ret_ty = if self.check(Arrow) {
@@ -198,12 +191,14 @@ impl Parser<'_> {
                 // { <stmt>* }
                 let blk = self.parse_stmt_block();
 
-                ItemKind::Fn(Box::new(Fn {
-                    ident: self.parse_ident(&name_token),
+                let fn_ = Fn {
+                    ident,
                     params: params.into(),
                     ret_ty,
                     blk,
-                }))
+                };
+
+                ItemKind::Fn(Box::new(fn_))
             }
             k => panic!("{k} is not a valid Item start."),
         };

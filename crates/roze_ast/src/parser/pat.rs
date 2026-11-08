@@ -20,7 +20,8 @@ impl Parser<'_> {
                     Mutability(false)
                 };
 
-                PatKind::Ident(m, self.parse_ident(&self.prev).into())
+                let ident = self.intern_ident(&self.prev);
+                PatKind::Ident(m, ident.into())
             }
             Underscore => PatKind::Discard,
             k => panic!("Unexpected token: {k} while parsing pattern"),
