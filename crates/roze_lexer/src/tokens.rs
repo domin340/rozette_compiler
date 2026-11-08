@@ -64,10 +64,8 @@ pub enum TokenKind {
     Num,
     /// <str>
     Str { closed: bool },
-    /// <quote>
-    Quote, // doesn't have any real use atm
     /// <lifetime>
-    Lifetime { numeric: bool },
+    Lifetime { invalid: bool },
     /// `true`
     True,
     /// `false`

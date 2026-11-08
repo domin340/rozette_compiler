@@ -4,6 +4,7 @@ use std::str::Chars;
 pub use tokens::{
     CommentKind, Token, TokenKind, classify_ident, is_ident_continue, is_ident_start,
 };
+use unicode_ident::is_xid_continue;
 
 pub const EOF: char = '\0';
 
@@ -202,19 +203,6 @@ impl<'source> Lexer<'source> {
         TokenKind::Str { closed }
     }
 
-    fn single_quote(&mut self) -> TokenKind {
-        debug_assert_eq!(self.prev, Some('\''));
-
-        match self.first() {
-            c if is_ident_continue(c) => {
-                let numeric = c.is_ascii_digit();
-                self.eat_ident_continue();
-                TokenKind::Lifetime { numeric }
-            }
-            _ => TokenKind::Quote,
-        }
-    }
-
     pub fn next_token(&mut self) -> Token {
         self.skip_space();
 
@@ -316,7 +304,15 @@ impl<'source> Lexer<'source> {
                 TokenKind::PipePipe
             }
             digit @ ('0'..='9') => self.number(digit),
-            '\'' => self.single_quote(),
+            '\'' => {
+                let invalid = {
+                    let c = self.first();
+                    !is_ident_continue(c) || c.is_ascii_digit()
+                };
+
+                self.eat_ident_continue();
+                TokenKind::Lifetime { invalid }
+            }
             '"' => self.string(),
             c if is_ident_start(c) => {
                 self.eat_ident_continue();
@@ -379,9 +375,9 @@ hello world" ""#),
     fn single_quote() {
         assert_eq!(
             vec![
-                token(Lifetime { numeric: false }, 0, 6),
-                token(Lifetime { numeric: true }, 7, 10),
-                token(Quote, 11, 12),
+                token(Lifetime { invalid: false }, 0, 6),
+                token(Lifetime { invalid: true }, 7, 10),
+                token(Lifetime { invalid: true }, 11, 12),
             ],
             lex("'hello '12 '")
         )
