@@ -168,8 +168,8 @@ impl Parser<'_> {
                     let items = self.parse_brace_terminated(Self::parse_item);
                     let span = self.record_span(start);
 
-                    let block = ItemsBlock { items, span };
-                    Mod::Block(Box::new(ModBlock { ident, block }))
+                    let blk = ItemsBlock { items, span };
+                    Mod::Block(Box::new(ModBlock { ident, blk }))
                 } else {
                     self.expect(Semi);
                     Mod::Include(ident)
@@ -353,7 +353,7 @@ mod tests {
                         name: hello_sym,
                         span: Span::new(18, 23),
                     },
-                    block: ItemsBlock {
+                    blk: ItemsBlock {
                         items: thin_vec![],
                         span: Span::new(24, 26),
                     }

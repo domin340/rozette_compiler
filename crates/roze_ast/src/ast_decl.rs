@@ -209,7 +209,7 @@ pub struct ItemsBlock {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModBlock {
     pub ident: Ident,
-    pub block: ItemsBlock,
+    pub blk: ItemsBlock,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
