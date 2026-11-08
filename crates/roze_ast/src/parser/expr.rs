@@ -60,6 +60,25 @@ impl Parser<'_> {
 
                 ExprKind::Lit(self.parse_str_lit())
             }
+            If => {
+                self.advance();
+                let cond = Box::new(self.parse_expr());
+                let blk = self.parse_stmt_block();
+
+                let else_blk = if self.check(Else) {
+                    Some(self.parse_stmt_block())
+                } else {
+                    None
+                };
+
+                let if_expr = If {
+                    cond,
+                    blk,
+                    else_blk,
+                };
+
+                ExprKind::If(if_expr.into())
+            }
             Num => ExprKind::Lit(self.parse_num_lit()),
             val @ (True | False) => {
                 self.advance();
