@@ -1,15 +1,14 @@
 use crate::{
     BinOp, CompoundOp, Expr, ExprKind, Lit, UnaryOp,
-    ast_decl::{Ident, Label, RangeKind},
+    ast_decl::{ForLoop, Ident, If, Label, RangeKind},
     parser::Parser,
 };
 use TokenKind::*;
-use roze_lexer::{Token, TokenKind};
+use roze_lexer::TokenKind;
 use roze_span::{Span, Symbol};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Prec {
-    Range,
     /// Call, tuple, index
     Grouping,
     Unary,
@@ -54,7 +53,13 @@ impl Parser<'_> {
                 let rhs = self.parse_pratt(Prec::Unary).into();
                 ExprKind::Unary(op, rhs)
             }
-            Str { closed: _ } => ExprKind::Lit(self.parse_str_lit()),
+            Str { closed } => {
+                if !closed {
+                    panic!("<str> isn't closed. Terminate the string with `\"`");
+                }
+
+                ExprKind::Lit(self.parse_str_lit())
+            }
             Num => ExprKind::Lit(self.parse_num_lit()),
             val @ (True | False) => {
                 self.advance();
@@ -165,22 +170,24 @@ impl Parser<'_> {
 
     pub(crate) fn try_parse_label(&mut self) -> Option<Label> {
         let token = self.token();
-        match self.token().kind {
-            Quote => panic!("`'` is not valid label. Try `'<ident>`."),
-            Lifetime { numeric } => {
-                if numeric {
-                    panic!("Labels cannot be numeric. Given numeric lifetime");
-                }
 
-                // take the identifier from lifetime
-                // `'hello`
-                //  ^ skip this single quote
-                let span = Span::new(token.start + 1, token.end);
-                let name = Symbol::intern(&self.s[span.clone()]);
-
-                Some(Label(Ident { name, span }))
+        if let Lifetime { invalid } = token.kind {
+            if invalid {
+                let s = &self.s[&token];
+                panic!("Invalid lifetime syntax `{s}`, try: `'<ident>`",);
             }
-            _ => None,
+
+            // take the identifier from lifetime
+            // `'hello :`
+            //  ^      ^ colon after lifetime
+            //  | skip this single quote
+            let span = Span::new(token.start + 1, token.end);
+            let name = Symbol::intern(&self.s[span.clone()]);
+            self.expect(Colon);
+
+            Some(Label(Ident { name, span }))
+        } else {
+            None
         }
     }
 
