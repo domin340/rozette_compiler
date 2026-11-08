@@ -199,10 +199,11 @@ impl Parser<'_> {
     }
 
     pub(crate) fn can_begin_expr(&self) -> bool {
-        // FIXME: lifetime + for
         match self.token().kind {
             Ident | ColonColon | // ident, path start
             LParen | LBracket | LCurly | Lt | // group
+            Lifetime { invalid: _ } | // lifetime
+            For | // loops
             True | False | Str { closed: _ } | Num | // literals
             Exclamation | Minus => true, // unary
             _ => false,
