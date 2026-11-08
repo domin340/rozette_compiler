@@ -196,13 +196,13 @@ impl Parser<'_> {
                 };
 
                 // { <stmt>* }
-                let block = self.parse_stmt_block();
+                let blk = self.parse_stmt_block();
 
                 ItemKind::Fn(Box::new(Fn {
                     ident: self.parse_ident(&name_token),
                     params: params.into(),
                     ret_ty,
-                    block,
+                    blk,
                 }))
             }
             k => panic!("{k} is not a valid Item start."),
@@ -453,7 +453,7 @@ mod tests {
         let (name_sym, a_sym, ten_sym) = intern_all!("name", "a", "10");
         let mut parser = Parser::new("fn name() -> () { let a = 10; a 10 }");
 
-        let block = Block {
+        let blk = Block {
             stmts: thin_vec![
                 Stmt {
                     kind: StmtKind::Let(Box::new(Local {
@@ -513,7 +513,7 @@ mod tests {
                             trailing: false,
                             span: Span::new(7, 9),
                         }),
-                        block,
+                        blk,
                         ret_ty: Some(Box::new(TyPat {
                             kind: TyPatKind::Unit,
                             span: Span::new(13, 15),

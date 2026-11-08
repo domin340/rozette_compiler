@@ -275,7 +275,7 @@ pub struct Params {
 pub struct Fn {
     pub ident: Ident,
     pub params: Box<Params>,
-    pub block: Block,
+    pub blk: Block,
     pub ret_ty: Option<Box<TyPat>>,
 }
 
