@@ -52,8 +52,12 @@ pub enum TokenKind {
     Fn,
     /// `pub`
     Pub,
+    /// `for`
+    For,
     /// `in`
     In,
+    /// `if`
+    If,
     /// <num>
     Num,
     /// <str>
@@ -165,6 +169,7 @@ pub fn classify_ident(s: &str) -> TokenKind {
             "as" => As,
             "fn" => Fn,
             "in" => In,
+            "if" => If,
             _ => Ident,
         },
         3 => match s {
@@ -173,6 +178,7 @@ pub fn classify_ident(s: &str) -> TokenKind {
             "use" => Use,
             "mod" => Mod,
             "pub" => Pub,
+            "for" => For,
             _ => Ident,
         },
         4 => match s {
