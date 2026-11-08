@@ -58,6 +58,8 @@ pub enum TokenKind {
     In,
     /// `if`
     If,
+    /// `else`
+    Else,
     /// <num>
     Num,
     /// <str>
@@ -183,6 +185,7 @@ pub fn classify_ident(s: &str) -> TokenKind {
         },
         4 => match s {
             "true" => True,
+            "else" => Else,
             _ => Ident,
         },
         5 => match s {
