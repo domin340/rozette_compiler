@@ -79,6 +79,19 @@ impl Parser<'_> {
 
                 ExprKind::If(if_expr.into())
             }
+            Lifetime { invalid: _ } => {
+                let label = self.try_parse_label();
+                let loop_token = self.token();
+                self.advance(); // skip the loop token (must be done)
+                match loop_token.kind {
+                    For => ExprKind::For(self.parse_for_loop_body(label).into()),
+                    k => panic!("Expected a loop expression. Found token: {k}"),
+                }
+            }
+            For => {
+                self.advance();
+                ExprKind::For(self.parse_for_loop_body(None).into())
+            }
             Num => ExprKind::Lit(self.parse_num_lit()),
             val @ (True | False) => {
                 self.advance();
@@ -95,6 +108,22 @@ impl Parser<'_> {
         Expr {
             kind: expr_kind,
             span: self.record_span(token.start),
+        }
+    }
+
+    fn parse_for_loop_body(&mut self, label: Option<Label>) -> ForLoop {
+        debug_assert_eq!(self.prev.kind, For);
+
+        let pat = Box::new(self.parse_pat());
+        self.expect(In);
+        let iter = Box::new(self.parse_expr());
+        let blk = self.parse_stmt_block();
+
+        ForLoop {
+            label,
+            pat,
+            iter,
+            blk,
         }
     }
 
@@ -170,6 +199,7 @@ impl Parser<'_> {
     }
 
     pub(crate) fn can_begin_expr(&self) -> bool {
+        // FIXME: lifetime + for
         match self.token().kind {
             Ident | ColonColon | // ident, path start
             LParen | LBracket | LCurly | Lt | // group
@@ -191,6 +221,8 @@ impl Parser<'_> {
         let token = self.token();
 
         if let Lifetime { invalid } = token.kind {
+            self.advance();
+
             if invalid {
                 let s = &self.s[&token];
                 panic!("Invalid lifetime syntax `{s}`, try: `'<ident>`",);
