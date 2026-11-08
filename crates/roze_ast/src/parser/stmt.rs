@@ -287,7 +287,7 @@ impl Parser<'_> {
         Param { pat, ty }
     }
 
-    fn parse_stmt_block(&mut self) -> Block {
+    pub(crate) fn parse_stmt_block(&mut self) -> Block {
         self.expect(LCurly);
         let start = self.prev.start;
         let stmts = self.parse_brace_terminated(Self::parse_stmt);
