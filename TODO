@@ -1,4 +1,16 @@
-1. Implement walkers to reset every span in AST tree
-2. Throughout tests for UseTree (branches and other suffixes)
-3. Precise pratt parse tests
-4. Prefix expression tests (return, break, continue)
+# TESTING (PRIORITY NUMBER 1)
+
+1. to_human and humanize methods for AST
+    - to_human() -> String
+    - display_human(&self, f: std::fmt::Formatter<'_>) -> std::fmt::Result<()>
+2. whole testing mod with utilities for testing AST
+    ```
+    assert_eq!(
+        binary(
+            num("120"),
+            BinOp::Plus,
+            cast(bool(true), ty_ident("number")),
+        ).to_human(),
+        parser.parse_expr().to_human(),
+    );
+    ```
