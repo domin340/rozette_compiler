@@ -1,4 +1,6 @@
-use crate::{BinOp, Expr, ExprKind};
+use roze_span::Symbol;
+
+use crate::{BinOp, Expr, ExprKind, Lit, ast_decl::Label};
 use std::fmt::{Display, Formatter, Result as FResult};
 
 pub struct HumanDisplay<'v, Ctx: Copy, V: Sized + Human<Ctx = Ctx>> {
@@ -13,12 +15,16 @@ impl<'a, Ctx: Copy, V: Human<Ctx = Ctx>> Display for HumanDisplay<'a, Ctx, V> {
 }
 
 pub trait Human: Sized {
-    type Ctx: Copy;
+    type Ctx: Copy + Default;
 
     fn human_fmt(&self, f: &mut Formatter, ctx: Self::Ctx) -> FResult;
 
     fn to_human(&self, ctx: Self::Ctx) -> String {
         format!("{}", self.to_fmt(ctx))
+    }
+
+    fn to_human_default(&self) -> String {
+        self.to_human(Self::Ctx::default())
     }
 
     fn to_fmt<'a>(&'a self, ctx: Self::Ctx) -> HumanDisplay<'a, Self::Ctx, Self> {
@@ -30,17 +36,17 @@ impl Human for Expr {
     type Ctx = DefaultCtx;
 
     fn human_fmt(&self, f: &mut Formatter, ctx: Self::Ctx) -> FResult {
-        expr(f, self, ctx)
+        expr(f, ctx, self)
     }
 }
 
 pub trait Spacer: Copy {
     /// Increments the amount of spaces in indentation level
     /// Returns the current amount of spaces given the indentation
-    fn indented(self) -> Self;
+    fn indent(&mut self);
 
     /// Decrements the amount of spaces in indentation level
-    fn dedented(self) -> Self;
+    fn dedent(&mut self);
 
     /// Returns the current amount of spaces given the indentation
     fn cur_space(&self) -> usize;
@@ -52,7 +58,7 @@ pub trait Spacer: Copy {
     }
 
     fn nl(&self, f: &mut Formatter) -> FResult {
-        nl(f)?;
+        f.write_str("\n")?;
         self.space(f)
     }
 }
@@ -77,56 +83,81 @@ impl Spacer for DefaultCtx {
         self.space as usize
     }
 
-    fn indented(self) -> Self {
-        Self {
-            space: self.space + self.per_space,
-            ..self
-        }
+    fn indent(&mut self) {
+        self.space += self.per_space;
     }
 
-    fn dedented(self) -> Self {
-        Self {
-            space: self.space - self.per_space,
-            ..self
-        }
+    fn dedent(&mut self) {
+        self.space -= self.per_space;
     }
-}
-
-pub fn nl(f: &mut Formatter) -> FResult {
-    f.write_str("\n")
 }
 
 pub fn blk<S: Spacer>(
     f: &mut Formatter,
-    c: S,
+    mut c: S,
     name: &'static str,
     mut inner_f: impl FnMut(&mut Formatter, S) -> FResult,
 ) -> FResult {
     // start the block
-    writeln!(f, "{name} {{")?;
+    write!(f, "{name} {{")?;
 
+    c.indent();
     c.nl(f)?;
-    inner_f(f, c.indented())?;
+    inner_f(f, c)?;
+
+    c.dedent();
     c.nl(f)?;
-    writeln!(f, "}}")
+    write!(f, "}}")
 }
 
-fn expr<S: Spacer>(f: &mut Formatter, e: &Expr, c: S) -> FResult {
+fn sym(f: &mut Formatter, s: &Symbol) -> FResult {
+    f.write_str(Symbol::as_str(s))
+}
+
+fn label(f: &mut Formatter, label: &Label) -> FResult {
+    sym(f, &label.name().name)
+}
+
+fn lit(f: &mut Formatter, lit: &Lit) -> FResult {
+    match lit {
+        Lit::Bool(b) => f.write_str(if *b { "true" } else { "false" }),
+        Lit::Num(s) | Lit::Str(s) => sym(f, s),
+    }
+}
+
+fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
     match &e.kind {
-        ExprKind::Assign(lhs, rhs) => blk(f, c, "Assign", |f, c| {
-            expr(f, lhs, c)?;
-            c.nl(f)?;
-            expr(f, rhs, c)
-        }),
+        ExprKind::Lit(l) => lit(f, l),
         ExprKind::Binary(lhs, op, rhs) => blk(f, c, "Binary", |f, c| {
-            expr(f, lhs, c)?;
+            expr(f, c, lhs)?;
             c.nl(f)?;
             write!(f, "{op:?}")?;
             c.nl(f)?;
-            expr(f, rhs, c)
+            expr(f, c, rhs)
         }),
-        ExprKind::Ret(Some(v)) => blk(f, c, "Ret", |f, c| expr(f, v, c)),
+        ExprKind::Unary(op, lhs) => blk(f, c, "Unary", |f, c| {
+            write!(f, "{op:?}")?;
+            c.nl(f)?;
+            expr(f, c, lhs)
+        }),
+        ExprKind::Assign(lhs, rhs) => blk(f, c, "Assign", |f, c| {
+            expr(f, c, lhs)?;
+            c.nl(f)?;
+            expr(f, c, rhs)
+        }),
+        ExprKind::Ret(Some(v)) => blk(f, c, "Ret", |f, c| expr(f, c, v)),
         ExprKind::Ret(None) => f.write_str("Ret"),
+        ExprKind::Break(l, e) => blk(f, c, "Break", |f, c| {
+            if let Some(l) = l {
+                label(f, l)?;
+                c.nl(f)?;
+            }
+            if let Some(e) = e {
+                expr(f, c, e)?;
+                c.nl(f)?;
+            }
+            Ok(())
+        }),
         _ => todo!(),
     }
 }
