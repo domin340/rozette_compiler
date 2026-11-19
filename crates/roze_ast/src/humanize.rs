@@ -1,6 +1,9 @@
 use roze_span::Symbol;
 
-use crate::{BinOp, Expr, ExprKind, Lit, ast_decl::Label};
+use crate::{
+    BinOp, Expr, ExprKind, Lit, Stmt,
+    ast_decl::{Block, Label, Path, PathSeg, RangeKind},
+};
 use std::fmt::{Display, Formatter, Result as FResult};
 
 pub struct HumanDisplay<'v, Ctx: Copy, V: Sized + Human<Ctx = Ctx>> {
@@ -125,6 +128,47 @@ fn lit(f: &mut Formatter, lit: &Lit) -> FResult {
     }
 }
 
+fn stmt<S: Spacer>(f: &mut Formatter, c: S, stmt: &Stmt) -> FResult {
+    todo!()
+}
+
+fn items_blk<S: Spacer>(f: &mut Formatter, c: S, b: &Block) -> FResult {
+    blk(f, c, "Block", move |f, c| {
+        if b.stmts.len() == 0 {
+            return Ok(());
+        }
+
+        // take every stmt before last element and write it separated by new line
+        for (idx, stmt_item) in b.stmts.iter().enumerate() {
+            if idx > 0 {
+                c.nl(f)?;
+            }
+
+            stmt(f, c, stmt_item)?;
+        }
+
+        stmt(f, c, b.stmts.last().unwrap())
+    })
+}
+
+fn path_segments(f: &mut Formatter, segs: &[PathSeg]) -> FResult {
+    for (i, seg) in segs.iter().enumerate() {
+        if i > 0 {
+            f.write_str("::")?;
+        }
+        sym(f, &seg.ident.name)?;
+    }
+
+    Ok(())
+}
+
+fn path(f: &mut Formatter, p: &Path) -> FResult {
+    match p {
+        Path::Simple(ident) => sym(f, &ident.name),
+        Path::Segs(segs) => path_segments(f, segs),
+    }
+}
+
 fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
     match &e.kind {
         ExprKind::Lit(l) => lit(f, l),
@@ -145,6 +189,13 @@ fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
             c.nl(f)?;
             expr(f, c, rhs)
         }),
+        ExprKind::Compound(lhs, op, rhs) => blk(f, c, "Compound", |f, c| {
+            expr(f, c, lhs)?;
+            c.nl(f)?;
+            write!(f, "{op:?}")?;
+            c.nl(f)?;
+            expr(f, c, rhs)
+        }),
         ExprKind::Ret(Some(v)) => blk(f, c, "Ret", |f, c| expr(f, c, v)),
         ExprKind::Ret(None) => f.write_str("Ret"),
         ExprKind::Break(l, e) => blk(f, c, "Break", |f, c| {
@@ -152,12 +203,73 @@ fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
                 label(f, l)?;
                 c.nl(f)?;
             }
+
             if let Some(e) = e {
                 expr(f, c, e)?;
                 c.nl(f)?;
             }
+
             Ok(())
         }),
-        _ => todo!(),
+        ExprKind::Continue(l) => blk(f, c, "Continue", |f, c| {
+            if let Some(l) = l {
+                label(f, l)?;
+            }
+
+            Ok(())
+        }),
+        ExprKind::Cast(value, ty) => blk(f, c, "Cast", |f, c| {
+            expr(f, c, value)?;
+            c.nl(f)?;
+            write!(f, "{ty:?}")
+        }),
+        ExprKind::Range(start, end, kind) => blk(f, c, "Range", |f, c| {
+            if let Some(start) = start {
+                expr(f, c, start)?;
+            }
+
+            c.nl(f)?;
+            write!(f, "{kind:?}")?;
+            c.nl(f)?;
+
+            if let Some(end) = end {
+                expr(f, c, end)?;
+            }
+
+            Ok(())
+        }),
+        ExprKind::If(if_expr) => blk(f, c, "If", |f, c| {
+            expr(f, c, &if_expr.cond)?;
+            c.nl(f)?;
+
+            items_blk(f, c, &if_expr.blk)?;
+
+            if let Some(else_blk) = &if_expr.else_blk {
+                items_blk(f, c, else_blk)?;
+            }
+
+            Ok(())
+        }),
+        ExprKind::For(loop_expr) => blk(f, c, "For", |f, c| {
+            if let Some(loop_label) = &loop_expr.label {
+                label(f, loop_label)?;
+                c.nl(f)?;
+            }
+            write!(f, "pat: {:?}", loop_expr.pat)?;
+            c.nl(f)?;
+            expr(f, c, &loop_expr.iter)?;
+            c.nl(f)?;
+            items_blk(f, c, &loop_expr.blk)?;
+            Ok(())
+        }),
+        ExprKind::Call(callee, args) => blk(f, c, "Call", |f, c| {
+            expr(f, c, callee)?;
+            for arg in args {
+                c.nl(f)?;
+                expr(f, c, arg)?;
+            }
+            Ok(())
+        }),
+        ExprKind::Path(p) => path(f, p),
     }
 }
