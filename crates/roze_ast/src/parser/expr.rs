@@ -404,49 +404,23 @@ mod tests {
     #[test]
     fn parse_call_expr_2() {
         let mut parser = Parser::new("true < false()");
-
-        // how I want to do the tests in the future.
-        // assert_eq!(
-        //     binary!(
-        //         lit!(true),
-        //         BinOp::Lt,
-        //         call!(
-        //             lit!(false),
-        //             args![],
-        //         ),
-        //     ),
-        //     parser.parse_expr(),
-        // );
-
         assert_eq!(
-            Expr {
-                kind: ExprKind::Binary(
-                    Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Bool(true)),
-                        span: Span::new(0, 4),
-                    }),
-                    BinOp::Lt,
-                    Box::new(Expr {
-                        kind: ExprKind::Call(
-                            Box::new(Expr {
-                                kind: ExprKind::Lit(Lit::Bool(false)),
-                                span: Span::new(7, 12),
-                            }),
-                            thin_vec![]
-                        ),
-                        span: Span::new(7, 14),
-                    }),
-                ),
-                span: Span::new(0, 14),
+            tree! {
+                Binary {
+                    true
+                    Lt
+                    Call {
+                        false
+                    }
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
     }
 
     #[test]
     fn parse_call_expr() {
         let mut parser = Parser::new("!x(2,) + 2");
-
         assert_eq!(
             tree! {
                 Binary {
@@ -467,27 +441,23 @@ mod tests {
 
     #[test]
     fn parse_return_expr() {
-        let ten_sym = intern_all!("10");
         let mut parser = Parser::new("return 10 return");
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Ret(Some(Box::new(Expr {
-                    kind: ExprKind::Lit(Lit::Num(ten_sym)),
-                    span: Span::new(7, 9),
-                }))),
-                span: Span::new(0, 9),
+            tree! {
+                Ret {
+                    10
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Ret(None),
-                span: Span::new(10, 16),
+            tree! {
+                Ret
             },
-            parser.parse_expr(),
-        )
+            parser.parse_expr().to_human_default(),
+        );
     }
 
     #[test]
