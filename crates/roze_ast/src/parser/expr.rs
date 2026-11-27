@@ -200,6 +200,7 @@ impl Parser<'_> {
 
     pub(crate) fn can_begin_expr(&self) -> bool {
         match self.token().kind {
+            Return |
             Ident | ColonColon | // ident, path start
             LParen | LBracket | LCurly | Lt | // group
             Lifetime { invalid: _ } | // lifetime
@@ -316,7 +317,8 @@ mod tests {
     use crate::{
         BinOp, Expr, ExprKind, Lit, Parser, UnaryOp,
         ast_decl::{Ident, Path, PathSeg, RangeKind},
-        intern_all,
+        humanize::Human,
+        intern_all, tree,
     };
 
     #[test]
@@ -325,95 +327,67 @@ mod tests {
         let mut parser = Parser::new("1..1 1..=1 1..; ..1; ..=1; ..");
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Range(
-                    Some(Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(one)),
-                        span: Span::new(0, 1),
-                    })),
-                    Some(Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(one)),
-                        span: Span::new(3, 4),
-                    })),
-                    RangeKind::HalfOpen
-                ),
-                span: Span::new(0, 4),
+            tree! {
+                Range {
+                    1
+                    HalfOpen
+                    1
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Range(
-                    Some(Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(one)),
-                        span: Span::new(5, 6),
-                    })),
-                    Some(Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(one)),
-                        span: Span::new(9, 10),
-                    })),
-                    RangeKind::Closed
-                ),
-                span: Span::new(5, 10),
+            tree! {
+                Range {
+                    1
+                    Closed
+                    1
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Range(
-                    Some(Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(one)),
-                        span: Span::new(11, 12),
-                    })),
-                    None,
-                    RangeKind::HalfOpen,
-                ),
-                span: Span::new(11, 14),
+            tree! {
+                Range {
+                    1
+                    HalfOpen
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
         parser.advance(); // Semi
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Range(
-                    None,
-                    Some(Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(one)),
-                        span: Span::new(18, 19),
-                    })),
-                    RangeKind::HalfOpen,
-                ),
-                span: Span::new(16, 19),
+            tree! {
+                Range {
+                    HalfOpen
+                    1
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
         parser.advance(); // Semi
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Range(
-                    None,
-                    Some(Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(one)),
-                        span: Span::new(24, 25),
-                    })),
-                    RangeKind::Closed,
-                ),
-                span: Span::new(21, 25),
+            tree! {
+                Range {
+                    Closed
+                    1
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
         parser.advance();
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Range(None, None, RangeKind::HalfOpen),
-                span: Span::new(27, 29),
+            tree! {
+                Range {
+                    HalfOpen
+                }
             },
-            parser.parse_expr()
+            parser.parse_expr().to_human_default(),
         );
     }
 
@@ -517,46 +491,23 @@ mod tests {
 
     #[test]
     fn parse_call_expr() {
-        let (two_sym, x_sym) = intern_all!("2", "x");
         let mut parser = Parser::new("!x(2,) + 2");
 
         assert_eq!(
-            Expr {
-                kind: ExprKind::Binary(
-                    Box::new(Expr {
-                        kind: ExprKind::Unary(
-                            UnaryOp::BitNot,
-                            Box::new(Expr {
-                                kind: ExprKind::Call(
-                                    Box::new(Expr {
-                                        kind: ExprKind::Path(
-                                            Ident {
-                                                name: x_sym,
-                                                span: Span::new(1, 2),
-                                            }
-                                            .into()
-                                        ),
-                                        span: Span::new(1, 2),
-                                    }),
-                                    thin_vec![Expr {
-                                        kind: ExprKind::Lit(Lit::Num(two_sym)),
-                                        span: Span::new(3, 4),
-                                    }],
-                                ),
-                                span: Span::new(1, 6),
-                            })
-                        ),
-                        span: Span::new(0, 6),
-                    }),
-                    BinOp::Add,
-                    Box::new(Expr {
-                        kind: ExprKind::Lit(Lit::Num(two_sym)),
-                        span: Span::new(9, 10),
-                    }),
-                ),
-                span: Span::new(0, 10),
+            tree! {
+                Binary {
+                    Unary {
+                        BitNot
+                        Call {
+                            x
+                            2
+                        }
+                    }
+                    Add
+                    2
+                }
             },
-            parser.parse_expr(),
+            parser.parse_expr().to_human_default(),
         );
     }
 
@@ -583,6 +534,36 @@ mod tests {
             },
             parser.parse_expr(),
         )
+    }
+
+    #[test]
+    fn parse_return_expr_str() {
+        macro_rules! assert_human_eq {
+            ($left:expr, $right:expr $(, $tt:tt)*) => {
+                assert_eq!($left.to_human_default(), $right.to_human_default(), $($tt)*)
+            };
+        }
+
+        fn expr(kind: ExprKind) -> Box<Expr> {
+            const DUMMY_SP: Span = Span::new(u32::MAX, u32::MAX);
+            Box::new(Expr {
+                kind,
+                span: DUMMY_SP,
+            })
+        }
+
+        fn ret(inner: Option<Box<Expr>>) -> Box<Expr> {
+            expr(ExprKind::Ret(inner))
+        }
+
+        fn num(s: &'static str) -> Box<Expr> {
+            let sym = intern_all!(s);
+            expr(ExprKind::Lit(Lit::Num(sym)))
+        }
+
+        let mut parser = Parser::new("return return 10");
+
+        assert_human_eq!(ret(Some(ret(Some(num("10"))))), parser.parse_expr());
     }
 
     #[test]
