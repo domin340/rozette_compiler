@@ -462,32 +462,17 @@ mod tests {
 
     #[test]
     fn parse_return_expr_str() {
-        macro_rules! assert_human_eq {
-            ($left:expr, $right:expr $(, $tt:tt)*) => {
-                assert_eq!($left.to_human_default(), $right.to_human_default(), $($tt)*)
-            };
-        }
-
-        fn expr(kind: ExprKind) -> Box<Expr> {
-            const DUMMY_SP: Span = Span::new(u32::MAX, u32::MAX);
-            Box::new(Expr {
-                kind,
-                span: DUMMY_SP,
-            })
-        }
-
-        fn ret(inner: Option<Box<Expr>>) -> Box<Expr> {
-            expr(ExprKind::Ret(inner))
-        }
-
-        fn num(s: &'static str) -> Box<Expr> {
-            let sym = intern_all!(s);
-            expr(ExprKind::Lit(Lit::Num(sym)))
-        }
-
         let mut parser = Parser::new("return return 10");
-
-        assert_human_eq!(ret(Some(ret(Some(num("10"))))), parser.parse_expr());
+        assert_eq!(
+            tree! {
+                Ret {
+                    Ret {
+                        10
+                    }
+                }
+            },
+            parser.parse_expr().to_human_default(),
+        );
     }
 
     #[test]
