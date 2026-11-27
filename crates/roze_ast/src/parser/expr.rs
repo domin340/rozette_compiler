@@ -502,37 +502,10 @@ mod tests {
 
     #[test]
     fn parse_path_segs() {
-        let (hello, world, b) = intern_all!("hello", "world", "b");
         let mut parser = Parser::new("hello::world::b");
-
         assert_eq!(
-            Expr {
-                kind: ExprKind::Path(Path::Segs(thin_vec![
-                    PathSeg {
-                        ident: Ident {
-                            name: hello,
-                            span: Span::new(0, 5),
-                        },
-                        span: Span::new(0, 5),
-                    },
-                    PathSeg {
-                        ident: Ident {
-                            name: world,
-                            span: Span::new(7, 12),
-                        },
-                        span: Span::new(5, 12),
-                    },
-                    PathSeg {
-                        ident: Ident {
-                            name: b,
-                            span: Span::new(14, 15),
-                        },
-                        span: Span::new(12, 15),
-                    },
-                ])),
-                span: Span::new(0, 15),
-            },
-            parser.parse_expr(),
+            tree!(hello::world::b),
+            parser.parse_expr().to_human_default(),
         );
     }
 
