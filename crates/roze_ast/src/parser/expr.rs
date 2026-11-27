@@ -323,7 +323,6 @@ mod tests {
 
     #[test]
     fn parse_ranges() {
-        let one = intern_all!("1");
         let mut parser = Parser::new("1..1 1..=1 1..; ..1; ..=1; ..");
 
         assert_eq!(
@@ -393,58 +392,13 @@ mod tests {
 
     #[test]
     fn parse_literals_and_ident() {
-        let (hello, decimal, hex, identifier) =
-            intern_all!("hello", "12.3e+2", "0x3faFA", "identifier");
         let mut parser = Parser::new(r#""hello" 12.3e+2 0x3faFA true false identifier"#);
-
-        assert_eq!(
-            Expr {
-                kind: ExprKind::Lit(Lit::Str(hello)),
-                span: Span::new(0, 7),
-            },
-            parser.parse_expr()
-        );
-        assert_eq!(
-            Expr {
-                kind: ExprKind::Lit(Lit::Num(decimal)),
-                span: Span::new(8, 15),
-            },
-            parser.parse_expr()
-        );
-        assert_eq!(
-            Expr {
-                kind: ExprKind::Lit(Lit::Num(hex)),
-                span: Span::new(16, 23),
-            },
-            parser.parse_expr()
-        );
-        assert_eq!(
-            Expr {
-                kind: ExprKind::Lit(Lit::Bool(true)),
-                span: Span::new(24, 28),
-            },
-            parser.parse_expr()
-        );
-        assert_eq!(
-            Expr {
-                kind: ExprKind::Lit(Lit::Bool(false)),
-                span: Span::new(29, 34),
-            },
-            parser.parse_expr()
-        );
-        assert_eq!(
-            Expr {
-                kind: ExprKind::Path(
-                    Ident {
-                        name: identifier,
-                        span: Span::new(35, 45)
-                    }
-                    .into()
-                ),
-                span: Span::new(35, 45),
-            },
-            parser.parse_expr()
-        );
+        assert_eq!(tree!("hello"), parser.parse_expr().to_human_default());
+        assert_eq!(tree!(12.3e+2), parser.parse_expr().to_human_default());
+        assert_eq!(tree!(0x3faFA), parser.parse_expr().to_human_default());
+        assert_eq!(tree!(true), parser.parse_expr().to_human_default());
+        assert_eq!(tree!(false), parser.parse_expr().to_human_default());
+        assert_eq!(tree!(identifier), parser.parse_expr().to_human_default());
     }
 
     #[test]
