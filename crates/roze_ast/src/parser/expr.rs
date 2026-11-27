@@ -311,15 +311,7 @@ impl Parser<'_> {
 
 #[cfg(test)]
 mod tests {
-    use roze_span::{Span, Symbol};
-    use thin_vec::thin_vec;
-
-    use crate::{
-        BinOp, Expr, ExprKind, Lit, Parser, UnaryOp,
-        ast_decl::{Ident, Path, PathSeg, RangeKind},
-        humanize::Human,
-        intern_all, tree,
-    };
+    use crate::{Parser, humanize::Human, tree};
 
     #[test]
     fn parse_ranges() {
