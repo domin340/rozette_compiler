@@ -282,12 +282,17 @@ fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
 #[macro_export]
 macro_rules! tree {
     (@ [$($i:tt)*]) => { "" };
-    (@ [$($i:tt)*] $s:tt { $($b:tt)* } $($r:tt)*) => {
-        concat!($($i,)* stringify!($s), " {\n", tree!(@ ["  " $($i)*] $($b)*),
+    (@ [$($i:tt)*] :: $s:tt $($r:tt)*) => { tree!(@p [$($i)*] [:: $s] $($r)*) };
+    (@ [$($i:tt)*] $s:tt $($r:tt)*) => { tree!(@p [$($i)*] [$s] $($r)*) };
+    (@p [$($i:tt)*] [$($a:tt)*] :: $s:tt $($r:tt)*) => {
+        tree!(@p [$($i)*] [$($a)* :: $s] $($r)*)
+    };
+    (@p [$($i:tt)*] [$($a:tt)*] { $($b:tt)* } $($r:tt)*) => {
+        concat!($($i,)* $(stringify!($a),)* " {\n", tree!(@ ["  " $($i)*] $($b)*),
                 $($i,)* "}\n", tree!(@ [$($i)*] $($r)*))
     };
-    (@ [$($i:tt)*] $s:tt $($r:tt)*) => {
-        concat!($($i,)* stringify!($s), "\n", tree!(@ [$($i)*] $($r)*))
+    (@p [$($i:tt)*] [$($a:tt)*] $($r:tt)*) => {
+        concat!($($i,)* $(stringify!($a),)* "\n", tree!(@ [$($i)*] $($r)*))
     };
     ($($t:tt)*) => { tree!(@ [] $($t)*).trim_end() };
 }
