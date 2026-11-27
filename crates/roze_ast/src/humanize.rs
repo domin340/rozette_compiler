@@ -124,7 +124,12 @@ fn label(f: &mut Formatter, label: &Label) -> FResult {
 fn lit(f: &mut Formatter, lit: &Lit) -> FResult {
     match lit {
         Lit::Bool(b) => f.write_str(if *b { "true" } else { "false" }),
-        Lit::Num(s) | Lit::Str(s) => sym(f, s),
+        Lit::Num(s) => sym(f, s),
+        Lit::Str(s) => {
+            write!(f, "\"")?;
+            sym(f, s)?;
+            write!(f, "\"")
+        }
     }
 }
 
