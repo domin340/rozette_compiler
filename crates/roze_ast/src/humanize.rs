@@ -226,13 +226,13 @@ fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
         ExprKind::Range(start, end, kind) => blk(f, c, "Range", |f, c| {
             if let Some(start) = start {
                 expr(f, c, start)?;
+                c.nl(f)?;
             }
 
-            c.nl(f)?;
             write!(f, "{kind:?}")?;
-            c.nl(f)?;
 
             if let Some(end) = end {
+                c.nl(f)?;
                 expr(f, c, end)?;
             }
 
@@ -272,4 +272,17 @@ fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
         }),
         ExprKind::Path(p) => path(f, p),
     }
+}
+
+#[macro_export]
+macro_rules! tree {
+    (@ [$($i:tt)*]) => { "" };
+    (@ [$($i:tt)*] $s:tt { $($b:tt)* } $($r:tt)*) => {
+        concat!($($i,)* stringify!($s), " {\n", tree!(@ ["  " $($i)*] $($b)*),
+                $($i,)* "}\n", tree!(@ [$($i)*] $($r)*))
+    };
+    (@ [$($i:tt)*] $s:tt $($r:tt)*) => {
+        concat!($($i,)* stringify!($s), "\n", tree!(@ [$($i)*] $($r)*))
+    };
+    ($($t:tt)*) => { tree!(@ [] $($t)*).trim_end() };
 }
