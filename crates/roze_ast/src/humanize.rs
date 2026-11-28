@@ -2,7 +2,7 @@ use roze_span::Symbol;
 
 use crate::{
     BinOp, Expr, ExprKind, Lit, Pat, PatKind, Stmt, StmtKind,
-    ast_decl::{Block, Label, Path, PathSeg, RangeKind},
+    ast_decl::{Block, Label, Mutability, Path, PathSeg, RangeKind},
 };
 use std::fmt::{Display, Formatter, Result as FResult};
 
@@ -179,7 +179,7 @@ fn path(f: &mut Formatter, p: &Path) -> FResult {
 fn pat<S: Spacer>(f: &mut Formatter, c: S, pat: &Pat) -> FResult {
     match &pat.kind {
         PatKind::Ident(mutability, ident) => blk(f, c, "PatIdent", |f, c| {
-            if mutability.0 {
+            if mutability == &Mutability::MUT {
                 f.write_str("mut")?;
                 c.nl(f)?;
             }

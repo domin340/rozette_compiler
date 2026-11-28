@@ -15,9 +15,9 @@ impl Parser<'_> {
             k @ (Mut | Ident) => {
                 let m = if k == Mut {
                     self.expect(Ident);
-                    Mutability(true)
+                    Mutability::MUT
                 } else {
-                    Mutability(false)
+                    Mutability::IMMUT
                 };
 
                 let ident = self.intern_ident(&self.prev);
