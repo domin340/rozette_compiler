@@ -318,7 +318,7 @@ mod tests {
     fn parse_ranges() {
         let mut parser = Parser::new("1..1 1..=1 1..; ..1; ..=1; ..");
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Range {
                     1
@@ -329,7 +329,7 @@ mod tests {
             parser.parse_expr().to_human_default(),
         );
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Range {
                     1
@@ -340,7 +340,7 @@ mod tests {
             parser.parse_expr().to_human_default(),
         );
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Range {
                     1
@@ -351,7 +351,7 @@ mod tests {
         );
         parser.advance(); // Semi
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Range {
                     HalfOpen
@@ -362,7 +362,7 @@ mod tests {
         );
         parser.advance(); // Semi
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Range {
                     Closed
@@ -373,7 +373,7 @@ mod tests {
         );
         parser.advance();
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Range {
                     HalfOpen
@@ -417,18 +417,18 @@ mod tests {
     #[test]
     fn parse_literals_and_ident() {
         let mut parser = Parser::new(r#""hello" 12.3e+2 0x3faFA true false identifier"#);
-        assert_eq!(tree!("hello"), parser.parse_expr().to_human_default());
-        assert_eq!(tree!(12.3e+2), parser.parse_expr().to_human_default());
-        assert_eq!(tree!(0x3faFA), parser.parse_expr().to_human_default());
-        assert_eq!(tree!(true), parser.parse_expr().to_human_default());
-        assert_eq!(tree!(false), parser.parse_expr().to_human_default());
-        assert_eq!(tree!(identifier), parser.parse_expr().to_human_default());
+        assert_str_eq!(tree!("hello"), parser.parse_expr().to_human_default());
+        assert_str_eq!(tree!(12.3e+2), parser.parse_expr().to_human_default());
+        assert_str_eq!(tree!(0x3faFA), parser.parse_expr().to_human_default());
+        assert_str_eq!(tree!(true), parser.parse_expr().to_human_default());
+        assert_str_eq!(tree!(false), parser.parse_expr().to_human_default());
+        assert_str_eq!(tree!(identifier), parser.parse_expr().to_human_default());
     }
 
     #[test]
     fn parse_call_expr_2() {
         let mut parser = Parser::new("true < false()");
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Binary {
                     true
@@ -445,7 +445,7 @@ mod tests {
     #[test]
     fn parse_call_expr() {
         let mut parser = Parser::new("!x(2,) + 2");
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Binary {
                     Unary {
@@ -467,7 +467,7 @@ mod tests {
     fn parse_return_expr() {
         let mut parser = Parser::new("return 10 return");
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Ret {
                     10
@@ -476,7 +476,7 @@ mod tests {
             parser.parse_expr().to_human_default(),
         );
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Ret
             },
@@ -487,7 +487,7 @@ mod tests {
     #[test]
     fn parse_return_expr_str() {
         let mut parser = Parser::new("return return 10");
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Ret {
                     Ret {
@@ -505,7 +505,7 @@ mod tests {
         // At the moment, the only clue compiler has tto distinguish between
         // ""::std" and "std" is that the first is a thin vec of exactly one element.
         // However, `Humanizer` atm "doesn't care"
-        assert_eq!(tree!(std), parser.parse_expr().to_human_default());
+        assert_str_eq!(tree!(std), parser.parse_expr().to_human_default());
 
         // Original test that distinguishes the structure:
 
@@ -527,7 +527,7 @@ mod tests {
     #[test]
     fn parse_path_segs() {
         let mut parser = Parser::new("hello::world::b");
-        assert_eq!(
+        assert_str_eq!(
             tree!(hello::world::b),
             parser.parse_expr().to_human_default(),
         );
@@ -537,7 +537,7 @@ mod tests {
     fn parse_binary_expressions() {
         let mut parser = Parser::new("10 + -10 * 2 + 2");
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
                 Binary {
                     10
