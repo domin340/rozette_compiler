@@ -312,6 +312,7 @@ impl Parser<'_> {
 #[cfg(test)]
 mod tests {
     use crate::{Parser, humanize::Human, tree};
+    use pretty_assertions::assert_str_eq;
 
     #[test]
     fn parse_ranges() {
@@ -383,23 +384,30 @@ mod tests {
     }
 
     #[test]
-    fn parse_labels_break_continue() {
-        let mut parser = Parser::new("break 'main_loop 10; continue 'inner_loop;");
+    fn parse_labeled_for_break_continue() {
+        let mut parser = Parser::new("'label: for a in b {break 'label 10; continue 'label}");
 
-        assert_eq!(
+        assert_str_eq!(
             tree! {
-                Break {
-                    main_loop
-                    10
-                }
-            },
-            parser.parse_expr().to_human_default()
-        );
-        parser.advance(); // Semi
-        assert_eq!(
-            tree! {
-                Continue {
-                    inner_loop
+                For {
+                    label
+                    PatIdent {
+                        a
+                    }
+                    b
+                    Block {
+                        Semi {
+                            Break {
+                                label
+                                10
+                            }
+                        }
+                        Expr {
+                            Continue {
+                                label
+                            }
+                        }
+                    }
                 }
             },
             parser.parse_expr().to_human_default(),
