@@ -1,8 +1,8 @@
 use crate::{
     Pat, Stmt, StmtKind,
     ast_decl::{
-        Block, Fn, Item, ItemKind, ItemsBlock, Local, LocalItem, LocalItemKind, Mod, ModBlock,
-        Mutability, Param, Params, Path, PathSeg, UseTree, UseTreeSuf, Vis,
+        Block, Fn, Item, ItemKind, ItemsBlock, Local, LocalItem, LocalItemKind, Mod, Mutability,
+        Param, Params, Path, PathSeg, UseTree, UseTreeSuf, Vis,
     },
     parser::{Parser, span},
 };
@@ -162,20 +162,19 @@ impl Parser<'_> {
             Mod => {
                 let ident = self.parse_ident();
 
-                let mod_item = if self.check(LCurly) {
+                let blk = if self.check(LCurly) {
                     let start = self.prev.start;
 
                     let items = self.parse_brace_terminated(Self::parse_item);
                     let span = self.record_span(start);
 
-                    let blk = ItemsBlock { items, span };
-                    Mod::Block(Box::new(ModBlock { ident, blk }))
+                    Some(ItemsBlock { items, span })
                 } else {
-                    self.expect(Semi);
-                    Mod::Include(ident)
+                    self.expect(Semi); // include mod is semi terminated
+                    None
                 };
 
-                ItemKind::Mod(mod_item)
+                ItemKind::Mod(Box::new(Mod { ident, blk }))
             }
             Fn => {
                 let ident = self.parse_ident();
@@ -309,23 +308,26 @@ mod tests {
     use crate::{
         Expr, ExprKind, Lit, Parser, Pat, PatKind, Stmt, StmtKind,
         ast_decl::{
-            Block, Fn, Ident, Item, ItemKind, ItemsBlock, Local, Mod, ModBlock, Mutability, Params,
-            Path, PathSeg, TyPat, TyPatKind, Vis,
+            Block, Fn, Ident, Item, ItemKind, ItemsBlock, Local, Mod, Mutability, Params, Path,
+            PathSeg, TyPat, TyPatKind, Vis,
         },
         intern_all,
     };
 
     #[test]
     fn parse_mod_include() {
-        let (a_sym) = intern_all!("a");
+        let a_sym = intern_all!("a");
         let mut parser = Parser::new("mod a;");
 
         assert_eq!(
             Item {
                 vis: Vis::Default,
-                kind: ItemKind::Mod(Mod::Include(Ident {
-                    name: a_sym,
-                    span: Span::new(4, 5),
+                kind: ItemKind::Mod(Box::new(Mod {
+                    ident: Ident {
+                        name: a_sym,
+                        span: Span::new(4, 5),
+                    },
+                    blk: None,
                 })),
                 span: Span::new(0, 6),
             },
@@ -348,16 +350,16 @@ mod tests {
                     span: Span::new(3, 13),
                     shorthand: false
                 },
-                kind: ItemKind::Mod(Mod::Block(Box::new(ModBlock {
+                kind: ItemKind::Mod(Box::new(Mod {
                     ident: Ident {
                         name: hello_sym,
                         span: Span::new(18, 23),
                     },
-                    blk: ItemsBlock {
+                    blk: Some(ItemsBlock {
                         items: thin_vec![],
                         span: Span::new(24, 26),
-                    }
-                }))),
+                    }),
+                })),
                 span: Span::new(0, 26),
             },
             parser.parse_item(),
