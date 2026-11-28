@@ -1,7 +1,7 @@
 use roze_span::Symbol;
 
 use crate::{
-    BinOp, Expr, ExprKind, Lit, Stmt,
+    BinOp, Expr, ExprKind, Lit, Pat, PatKind, Stmt, StmtKind,
     ast_decl::{Block, Label, Path, PathSeg, RangeKind},
 };
 use std::fmt::{Display, Formatter, Result as FResult};
@@ -134,7 +134,11 @@ fn lit(f: &mut Formatter, lit: &Lit) -> FResult {
 }
 
 fn stmt<S: Spacer>(f: &mut Formatter, c: S, stmt: &Stmt) -> FResult {
-    todo!()
+    match &stmt.kind {
+        StmtKind::Expr(e) => blk(f, c, "Expr", |f, c| expr(f, c, e)),
+        StmtKind::Semi(e) => blk(f, c, "Semi", |f, c| expr(f, c, e)),
+        _ => todo!(),
+    }
 }
 
 fn items_blk<S: Spacer>(f: &mut Formatter, c: S, b: &Block) -> FResult {
@@ -143,16 +147,14 @@ fn items_blk<S: Spacer>(f: &mut Formatter, c: S, b: &Block) -> FResult {
             return Ok(());
         }
 
-        // take every stmt before last element and write it separated by new line
         for (idx, stmt_item) in b.stmts.iter().enumerate() {
             if idx > 0 {
                 c.nl(f)?;
             }
-
             stmt(f, c, stmt_item)?;
         }
 
-        stmt(f, c, b.stmts.last().unwrap())
+        Ok(())
     })
 }
 
@@ -171,6 +173,20 @@ fn path(f: &mut Formatter, p: &Path) -> FResult {
     match p {
         Path::Simple(ident) => sym(f, &ident.name),
         Path::Segs(segs) => path_segments(f, segs),
+    }
+}
+
+fn pat<S: Spacer>(f: &mut Formatter, c: S, pat: &Pat) -> FResult {
+    match &pat.kind {
+        PatKind::Ident(mutability, ident) => blk(f, c, "PatIdent", |f, c| {
+            if mutability.0 {
+                f.write_str("mut")?;
+                c.nl(f)?;
+            }
+
+            sym(f, &ident.name)
+        }),
+        PatKind::Discard => f.write_str("PatDiscard"),
     }
 }
 
@@ -259,7 +275,7 @@ fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
                 label(f, loop_label)?;
                 c.nl(f)?;
             }
-            write!(f, "pat: {:?}", loop_expr.pat)?;
+            pat(f, c, &loop_expr.pat)?;
             c.nl(f)?;
             expr(f, c, &loop_expr.iter)?;
             c.nl(f)?;
