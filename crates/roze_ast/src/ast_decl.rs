@@ -309,6 +309,7 @@ pub enum BinOp {
     And,
     Or,
     EqEq,
+    NotEq,
     Lt,
     LtEq,
     Gt,

@@ -140,7 +140,7 @@ impl Parser<'_> {
 
             match token.kind {
                 k @ (Plus | Minus | Asterisk | Slash | Percent | AmperAmper | PipePipe | Lt
-                | LtEq | Gt | GtEq | EqEq) => {
+                | LtEq | Gt | GtEq | EqEq | NotEq) => {
                     let bin_op = match k {
                         Plus => BinOp::Add,
                         Minus => BinOp::Sub,
@@ -153,6 +153,8 @@ impl Parser<'_> {
                         LtEq => BinOp::LtEq,
                         Gt => BinOp::Gt,
                         GtEq => BinOp::GtEq,
+                        EqEq => BinOp::EqEq,
+                        NotEq => BinOp::NotEq,
                         _ => unreachable!("`bin_op` doesn't goard all cases"),
                     };
 
