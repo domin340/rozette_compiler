@@ -81,9 +81,10 @@ impl Parser<'_> {
             }
             Lifetime { invalid: _ } => {
                 let label = self.try_parse_label();
-                let loop_token = self.token();
+                self.expect(Colon); // alone lifetime is invalid
+
                 self.advance(); // skip the loop token (must be done)
-                match loop_token.kind {
+                match self.prev.kind {
                     For => ExprKind::For(self.parse_for_loop_body(label).into()),
                     k => panic!("Expected a loop expression. Found token: {k}"),
                 }
@@ -231,12 +232,11 @@ impl Parser<'_> {
             }
 
             // take the identifier from lifetime
-            // `'hello :`
-            //  ^      ^ colon after lifetime
+            // `'hello`
+            //  ^      ^ possibly colon after lifetime
             //  | skip this single quote
             let span = Span::new(token.start + 1, token.end);
             let name = Symbol::intern(&self.s[span.clone()]);
-            self.expect(Colon);
 
             Some(Label(Ident { name, span }))
         } else {
@@ -376,6 +376,30 @@ mod tests {
             tree! {
                 Range {
                     HalfOpen
+                }
+            },
+            parser.parse_expr().to_human_default(),
+        );
+    }
+
+    #[test]
+    fn parse_labels_break_continue() {
+        let mut parser = Parser::new("break 'main_loop 10; continue 'inner_loop;");
+
+        assert_eq!(
+            tree! {
+                Break {
+                    main_loop
+                    10
+                }
+            },
+            parser.parse_expr().to_human_default()
+        );
+        parser.advance(); // Semi
+        assert_eq!(
+            tree! {
+                Continue {
+                    inner_loop
                 }
             },
             parser.parse_expr().to_human_default(),
