@@ -190,14 +190,12 @@ impl Parser<'_> {
                 // { <stmt>* }
                 let blk = self.parse_stmt_block();
 
-                let fn_ = Fn {
+                ItemKind::Fn(Box::new(Fn {
                     ident,
                     params: params.into(),
                     ret_ty,
                     blk,
-                };
-
-                ItemKind::Fn(Box::new(fn_))
+                }))
             }
             k => panic!("{k} is not a valid Item start."),
         };
