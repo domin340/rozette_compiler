@@ -212,18 +212,9 @@ pub struct ItemsBlock {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ModBlock {
+pub struct Mod {
     pub ident: Ident,
-    pub blk: ItemsBlock,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Mod {
-    /// Mod with defined body block.
-    Block(Box<ModBlock>),
-    /// (`mod my_script`).
-    /// Used to include files just like in Rust.
-    Include(Ident),
+    pub blk: Option<ItemsBlock>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -231,7 +222,7 @@ pub enum ItemKind {
     Use(Box<UseTree>),
     Fn(Box<Fn>),
     Local(Box<LocalItem>),
-    Mod(Mod),
+    Mod(Box<Mod>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
