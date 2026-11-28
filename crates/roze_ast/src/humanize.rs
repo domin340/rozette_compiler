@@ -211,7 +211,6 @@ fn expr<S: Spacer>(f: &mut Formatter, c: S, e: &Expr) -> FResult {
 
             if let Some(e) = e {
                 expr(f, c, e)?;
-                c.nl(f)?;
             }
 
             Ok(())
