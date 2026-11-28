@@ -139,6 +139,11 @@ pub enum RangeKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Mutability(pub bool);
 
+impl Mutability {
+    pub const MUT: Mutability = Mutability(true);
+    pub const IMMUT: Mutability = Mutability(false);
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Label(pub Ident);
 
